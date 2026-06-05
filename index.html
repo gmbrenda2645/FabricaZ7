@@ -557,7 +557,7 @@
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
         ⬆ Cargar Excel
       </button>
-      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadExcelFile(event)" />
+      <input type="file" id="fileInput" accept=".xlsx,.xls" multiple onchange="loadExcelFile(event)" />
     </div>
   </div>
 
@@ -736,37 +736,48 @@
       <div class="panel-body">
         <div class="drop-zone" id="drop-zone" onclick="document.getElementById('fileInput').click()">
           <div class="dz-icon">📂</div>
-          <p><strong>Arrastra tu Excel aquí</strong> o haz clic para seleccionarlo</p>
-          <small>Archivos .xlsx o .xls · Se esperan hojas: Centros_Produccion, Produccion, Materiales_Pendientes</small>
+          <p><strong>Arrastra tus archivos Excel aquí</strong> o haz clic para seleccionarlos</p>
+          <small>Selecciona uno o los dos archivos a la vez · .xlsx o .xls</small>
         </div>
 
         <div style="background:var(--crema);border-radius:var(--radius);padding:20px;margin-top:8px;">
-          <h3 style="font-size:.9rem;color:var(--marron);margin-bottom:12px;">📋 Formato de Hojas Requeridas</h3>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;font-size:.82rem;">
+          <h3 style="font-size:.9rem;color:var(--marron);margin-bottom:12px;">📋 Formato de Archivos Requeridos</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;font-size:.82rem;">
             <div>
-              <strong style="color:var(--marron);">Hoja 1 · Centros_Produccion</strong>
-              <ul style="margin-top:6px;padding-left:18px;color:var(--gris-mid);line-height:1.7;">
-                <li>Centro de Producción</li><li>Responsable</li><li>Turno</li><li>Estado</li><li>Capacidad (unid/día)</li>
+              <strong style="color:var(--marron);">Archivo 1 · Datos_produccion_YYYY-MM-DD.xlsx</strong>
+              <p style="color:var(--gris-mid);margin:4px 0 6px;">Datos de producción del día. Hoja única con columnas:</p>
+              <ul style="padding-left:18px;color:var(--gris-mid);line-height:1.8;">
+                <li>Fecha</li>
+                <li>Estado</li>
+                <li>Codigo producido</li>
+                <li>Producto</li>
+                <li>Centro</li>
+                <li>Planificado</li>
+                <li>Producido</li>
+                <li>Unidades buenas</li>
+                <li>Unidades malas</li>
+                <li>Rendimiento (%)</li>
+                <li>Merma (%)</li>
               </ul>
             </div>
             <div>
-              <strong style="color:var(--marron);">Hoja 2 · Produccion</strong>
-              <ul style="margin-top:6px;padding-left:18px;color:var(--gris-mid);line-height:1.7;">
-                <li>Producto</li><li>Centro</li><li>Planificado (u)</li><li>Elaborado (u)</li><li>Rendimiento (%)</li>
-                <li>Merma (u)</li><li>Merma (%)</li><li>No Elaborado (u)</li><li>Fecha</li><li>Turno</li>
-              </ul>
-            </div>
-            <div>
-              <strong style="color:var(--marron);">Hoja 3 · Materiales_Pendientes</strong>
-              <ul style="margin-top:6px;padding-left:18px;color:var(--gris-mid);line-height:1.7;">
-                <li>Material</li><li>Centro Solicitante</li><li>Cantidad Solicitada</li><li>Unidad</li>
-                <li>Stock Actual</li><li>Estado</li><li>Fecha Solicitud</li>
+              <strong style="color:var(--marron);">Archivo 2 · No_producidos_YYYY-MM-DD.xlsx</strong>
+              <p style="color:var(--gris-mid);margin:4px 0 6px;">Productos que no se elaboraron. Hoja única con columnas:</p>
+              <ul style="padding-left:18px;color:var(--gris-mid);line-height:1.8;">
+                <li>fecha_plan</li>
+                <li>codigo_producido</li>
+                <li>producto</li>
+                <li>centro</li>
+                <li>estado</li>
               </ul>
             </div>
           </div>
-          <p style="margin-top:14px;font-size:.8rem;color:var(--gris-mid);">
-            💡 <strong>Nombramiento de archivo sugerido:</strong> <code style="background:#fff;padding:2px 7px;border-radius:4px;border:1px solid #ddd;">produccion_YYYY-MM-DD.xlsx</code>
-          </p>
+          <div style="margin-top:16px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid var(--crema-dark);">
+            <p style="font-size:.82rem;color:var(--gris-text);margin-bottom:6px;">💡 <strong>Nombres de archivo sugeridos para carga automática diaria:</strong></p>
+            <code style="display:block;background:var(--crema-dark);padding:6px 12px;border-radius:6px;font-size:.8rem;margin-bottom:4px;">Datos_produccion_2026-06-04.xlsx</code>
+            <code style="display:block;background:var(--crema-dark);padding:6px 12px;border-radius:6px;font-size:.8rem;">No_producidos_2026-06-04.xlsx</code>
+            <p style="font-size:.78rem;color:var(--gris-mid);margin-top:8px;">⚠️ No uses tildes en el nombre del archivo (produccion, no producción)</p>
+          </div>
         </div>
       </div>
     </div>
@@ -782,6 +793,7 @@
 const state = {
   centros: [],
   produccion: [],
+  noProducidos: [],
   materiales: [],
   fileName: null,
 };
@@ -817,49 +829,84 @@ dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dra
 dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
 dz.addEventListener('drop', e => {
   e.preventDefault(); dz.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length > 0) processFiles(files);
 });
 
 // ─── File input handler ───────────────────────────────────────
 function loadExcelFile(event) {
-  const file = event.target.files[0];
-  if (file) processFile(file);
+  const files = Array.from(event.target.files);
+  if (files.length > 0) processFiles(files);
 }
 
-function processFile(file) {
-  if (!file.name.match(/\.(xlsx|xls)$/i)) {
-    showToast('Por favor selecciona un archivo .xlsx o .xls', 'error');
-    return;
-  }
-  state.fileName = file.name;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
-      parseWorkbook(wb);
-      showToast('✅ Archivo cargado correctamente: ' + file.name, 'success');
+function processFiles(files) {
+  // Identifica cada archivo por su nombre
+  const fDatos   = files.find(f => /datos/i.test(f.name))   || (files.length === 1 ? files[0] : null);
+  const fNoProd  = files.find(f => /no.prod|no_prod/i.test(f.name));
+
+  const readExcel = f => new Promise((res, rej) => {
+    if (!f) return res(null);
+    if (!f.name.match(/\.(xlsx|xls)$/i)) return res(null);
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { res(XLSX.read(new Uint8Array(e.target.result), { type: 'array' })); }
+      catch(err) { rej(err); }
+    };
+    reader.readAsArrayBuffer(f);
+  });
+
+  Promise.all([readExcel(fDatos), readExcel(fNoProd)])
+    .then(([wb1, wb2]) => {
+      parseWorkbooks(wb1, wb2);
+      showToast('✅ Archivos cargados: ' + files.map(f => f.name).join(', '), 'success');
       showSection('overview', document.querySelector('[data-section="overview"]'));
-    } catch(err) {
-      showToast('Error al leer el archivo: ' + err.message, 'error');
-    }
-  };
-  reader.readAsArrayBuffer(file);
+    })
+    .catch(err => showToast('Error al leer: ' + err.message, 'error'));
 }
 
-function parseWorkbook(wb) {
-  // Sheet 1: Centros
-  const ws1 = wb.Sheets['Centros_Produccion'] || wb.Sheets[wb.SheetNames[0]];
-  state.centros = ws1 ? XLSX.utils.sheet_to_json(ws1) : [];
+// ─── Convertir número serial Excel a fecha legible ────────────
+function excelDateToString(val) {
+  if (!val) return '';
+  const n = Number(val);
+  if (isNaN(n) || n < 40000) return val; // ya es texto o fecha inválida
+  const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+  return d.toLocaleDateString('es-GT');
+}
 
-  // Sheet 2: Produccion
-  const ws2 = wb.Sheets['Produccion'] || wb.Sheets[wb.SheetNames[1]];
-  state.produccion = ws2 ? XLSX.utils.sheet_to_json(ws2) : [];
+function parseWorkbooks(wb1, wb2) {
+  // ── Archivo 1: Datos_producción ──────────────────────────────
+  if (wb1) {
+    const ws = wb1.Sheets[wb1.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: '' });
+    // Convertir fechas seriales a texto legible
+    state.produccion = rows.map(r => ({
+      ...r,
+      Fecha: excelDateToString(r['Fecha']),
+    }));
+    // Derivar centros únicos desde los datos de producción
+    const centrosMap = {};
+    state.produccion.forEach(r => {
+      const c = r['Centro'] || 'Sin centro';
+      if (!centrosMap[c]) centrosMap[c] = { 'Centro': c, 'Registros': 0, 'Total Planificado': 0, 'Total Producido': 0 };
+      centrosMap[c]['Registros']++;
+      centrosMap[c]['Total Planificado'] += Number(r['Planificado']) || 0;
+      centrosMap[c]['Total Producido']   += Number(r['Producido'])   || 0;
+    });
+    state.centros = Object.values(centrosMap);
+  }
 
-  // Sheet 3: Materiales
-  const ws3 = wb.Sheets['Materiales_Pendientes'] || wb.Sheets[wb.SheetNames[2]];
-  state.materiales = ws3 ? XLSX.utils.sheet_to_json(ws3) : [];
+  // ── Archivo 2: No_producidos ──────────────────────────────────
+  if (wb2) {
+    const ws = wb2.Sheets[wb2.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: '' });
+    state.noProducidos = rows.map(r => ({
+      'Fecha Planif.':   excelDateToString(r['fecha_plan']),
+      'Código':          r['codigo_producido'],
+      'Producto':        r['producto'],
+      'Centro':          r['centro'],
+      'Estado':          r['estado'],
+    }));
+  }
 
   renderAll();
 }
@@ -867,35 +914,37 @@ function parseWorkbook(wb) {
 // ─── Render all tables ────────────────────────────────────────
 function renderAll() {
   updateKPIs();
+  // Centros derivados
   renderTable('centros', state.centros, 'centros-table', 'centros-head', 'centros-body', 'empty-centros');
+  // Producción completa
   renderTable('produccion', state.produccion, 'prod-table', 'prod-head', 'prod-body', 'empty-prod',
-    col => col.includes('Rendimiento') ? 'rendimiento' : col.includes('Merma') ? 'merma' : col.includes('Estado') ? 'estado' : null);
+    col => col === 'Rendimiento (%)' ? 'rendimiento' : col === 'Merma (%)' ? 'merma' : col === 'Estado' ? 'estado' : null);
+  // Derivadas
   renderRendimientos();
   renderMermas();
-  renderNoElaborados();
-  renderTable('materiales', state.materiales, 'mat-table', 'mat-head', 'mat-body', 'empty-mat',
+  // No producidos (segundo archivo)
+  renderTable('no-producidos', state.noProducidos, 'noelab-table', 'noelab-head', 'noelab-body', 'empty-noelab',
     col => col === 'Estado' ? 'estado' : null);
+  // Materiales (sin archivo dedicado por ahora)
+  renderTable('materiales', state.materiales, 'mat-table', 'mat-head', 'mat-body', 'empty-mat');
   renderOverviewCharts();
-
-  // subtitle
   document.getElementById('topbar-subtitle').textContent =
-    `${state.produccion.length} productos · ${state.centros.length} centros · ${state.materiales.length} materiales pendientes`;
+    `${state.produccion.length} registros · ${state.centros.length} centros · ${state.noProducidos.length} no producidos`;
 }
 
 // ─── KPI Cards ───────────────────────────────────────────────
 function updateKPIs() {
   const p = state.produccion;
-  const plan = p.reduce((s, r) => s + (Number(r['Planificado (u)']) || 0), 0);
-  const elab = p.reduce((s, r) => s + (Number(r['Elaborado (u)'])   || 0), 0);
-  const merm = p.reduce((s, r) => s + (Number(r['Merma (u)'])       || 0), 0);
-  const noel = p.reduce((s, r) => s + (Number(r['No Elaborado (u)'])|| 0), 0);
-  const rend = p.length ? (p.reduce((s, r) => s + (Number(r['Rendimiento (%)']) || 0), 0) / p.length) : 0;
+  const plan  = p.reduce((s, r) => s + (Number(r['Planificado'])      || 0), 0);
+  const prod  = p.reduce((s, r) => s + (Number(r['Producido'])        || 0), 0);
+  const malas = p.reduce((s, r) => s + (Number(r['Unidades malas'])   || 0), 0);
+  const rend  = p.length ? (p.reduce((s, r) => s + (Number(r['Rendimiento (%)']) || 0), 0) / p.length) : 0;
 
   document.getElementById('kpi-plan').textContent = plan.toLocaleString('es-GT');
-  document.getElementById('kpi-elab').textContent = elab.toLocaleString('es-GT');
+  document.getElementById('kpi-elab').textContent = prod.toLocaleString('es-GT');
   document.getElementById('kpi-rend').textContent = rend.toFixed(1) + '%';
-  document.getElementById('kpi-merm').textContent = merm.toLocaleString('es-GT');
-  document.getElementById('kpi-noel').textContent = noel.toLocaleString('es-GT');
+  document.getElementById('kpi-merm').textContent = malas.toLocaleString('es-GT');
+  document.getElementById('kpi-noel').textContent = state.noProducidos.length.toLocaleString('es-GT');
   document.getElementById('kpi-mat').textContent  = state.materiales.length;
 }
 
@@ -945,8 +994,10 @@ function renderProgress(val) {
 function renderEstado(val) {
   const v = String(val).trim().toUpperCase();
   if (v === 'URGENTE')      return `<span class="badge badge-red">🚨 URGENTE</span>`;
+  if (v === 'COMPLETADO')   return `<span class="badge badge-green">✅ Completado</span>`;
   if (v === 'ACTIVO')       return `<span class="badge badge-green">✅ Activo</span>`;
   if (v === 'PENDIENTE')    return `<span class="badge badge-orange">⏳ Pendiente</span>`;
+  if (v === 'BORRADOR')     return `<span class="badge badge-orange">📝 Borrador</span>`;
   if (v === 'NORMAL')       return `<span class="badge badge-blue">📋 Normal</span>`;
   if (v === 'MANTENIMIENTO')return `<span class="badge badge-gray">🔧 Mantenim.</span>`;
   return `<span class="badge badge-gray">${val}</span>`;
@@ -955,44 +1006,38 @@ function renderEstado(val) {
 // ─── Derived tables ───────────────────────────────────────────
 function renderRendimientos() {
   const data = state.produccion.map(r => ({
-    'Producto':        r['Producto'],
-    'Centro':          r['Centro'],
-    'Planificado (u)': r['Planificado (u)'],
-    'Elaborado (u)':   r['Elaborado (u)'],
-    'Rendimiento (%)': r['Rendimiento (%)'],
-    'Turno':           r['Turno'],
-    'Fecha':           r['Fecha'],
+    'Fecha':            r['Fecha'],
+    'Código':           r['Codigo producido'],
+    'Producto':         r['Producto'],
+    'Centro':           r['Centro'],
+    'Planificado':      r['Planificado'],
+    'Producido':        r['Producido'],
+    'Unidades buenas':  r['Unidades buenas'],
+    'Rendimiento (%)':  typeof r['Rendimiento (%)'] === 'number'
+                          ? parseFloat(r['Rendimiento (%)'].toFixed(2))
+                          : r['Rendimiento (%)'],
+    'Estado':           r['Estado'],
   }));
   renderTable('rendimientos', data, 'rend-table', 'rend-head', 'rend-body', 'empty-rend',
-    col => col.includes('Rendimiento') ? 'rendimiento' : null);
+    col => col === 'Rendimiento (%)' ? 'rendimiento' : col === 'Estado' ? 'estado' : null);
 }
 
 function renderMermas() {
-  const data = state.produccion.map(r => ({
-    'Producto':   r['Producto'],
-    'Centro':     r['Centro'],
-    'Elaborado':  r['Elaborado (u)'],
-    'Merma (u)':  r['Merma (u)'],
-    'Merma (%)':  r['Merma (%)'],
-    'Turno':      r['Turno'],
-  }));
-  renderTable('mermas', data, 'merma-table', 'merma-head', 'merma-body', 'empty-merma',
-    col => col.includes('Merma (%)') ? 'merma' : null);
-}
-
-function renderNoElaborados() {
   const data = state.produccion
-    .filter(r => (Number(r['No Elaborado (u)']) || 0) > 0)
+    .filter(r => (Number(r['Unidades malas']) || 0) > 0)
     .map(r => ({
-      'Producto':          r['Producto'],
-      'Centro':            r['Centro'],
-      'Planificado (u)':   r['Planificado (u)'],
-      'Elaborado (u)':     r['Elaborado (u)'],
-      'No Elaborado (u)':  r['No Elaborado (u)'],
-      'Rendimiento (%)':   r['Rendimiento (%)'],
+      'Fecha':            r['Fecha'],
+      'Código':           r['Codigo producido'],
+      'Producto':         r['Producto'],
+      'Centro':           r['Centro'],
+      'Producido':        r['Producido'],
+      'Unidades malas':   r['Unidades malas'],
+      'Merma (%)':        typeof r['Merma (%)'] === 'number'
+                            ? parseFloat(r['Merma (%)'].toFixed(2))
+                            : r['Merma (%)'],
     }));
-  renderTable('no-elaborados', data, 'noelab-table', 'noelab-head', 'noelab-body', 'empty-noelab',
-    col => col.includes('Rendimiento') ? 'rendimiento' : null);
+  renderTable('mermas', data, 'merma-table', 'merma-head', 'merma-body', 'empty-merma',
+    col => col === 'Merma (%)' ? 'merma' : null);
 }
 
 // ─── Overview mini charts ─────────────────────────────────────
@@ -1000,11 +1045,11 @@ function renderOverviewCharts() {
   const empty = document.getElementById('overview-empty');
   empty.style.display = 'none';
 
-  // Chart: elaborado por centro
+  // Chart: Producido por centro
   const byCenter = {};
   state.produccion.forEach(r => {
     const c = r['Centro'] || 'Sin centro';
-    byCenter[c] = (byCenter[c] || 0) + (Number(r['Elaborado (u)']) || 0);
+    byCenter[c] = (byCenter[c] || 0) + (Number(r['Producido']) || 0);
   });
   const maxC = Math.max(...Object.values(byCenter), 1);
   document.getElementById('chart-centros').innerHTML = Object.entries(byCenter).map(([k,v]) =>
@@ -1015,15 +1060,20 @@ function renderOverviewCharts() {
     </div>`
   ).join('');
 
-  // Chart: rendimiento por producto
-  const sorted = [...state.produccion].sort((a,b)=>(Number(b['Rendimiento (%)'])||0)-(Number(a['Rendimiento (%)'])||0)).slice(0,8);
-  document.getElementById('chart-rendimiento').innerHTML = sorted.map(r =>
-    `<div class="bar-row">
+  // Chart: rendimiento por producto (top 8)
+  const sorted = [...state.produccion]
+    .filter(r => Number(r['Rendimiento (%)']) > 0)
+    .sort((a,b) => (Number(b['Rendimiento (%)'])||0) - (Number(a['Rendimiento (%)'])||0))
+    .slice(0, 8);
+  document.getElementById('chart-rendimiento').innerHTML = sorted.map(r => {
+    const pct = parseFloat(Number(r['Rendimiento (%)']).toFixed(1));
+    const barW = Math.min(pct, 100);
+    return `<div class="bar-row">
       <div class="bar-label" title="${r['Producto']}">${r['Producto']}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(Number(r['Rendimiento (%)']),100)}%"></div></div>
-      <div class="bar-val">${Number(r['Rendimiento (%)']).toFixed(1)}%</div>
-    </div>`
-  ).join('');
+      <div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div>
+      <div class="bar-val">${pct}%</div>
+    </div>`;
+  }).join('');
 }
 
 // ─── Search / Filter ──────────────────────────────────────────
@@ -1076,18 +1126,22 @@ function exportTableCSV(tableId, name) {
 
 // ─── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // try to auto-load today's file from /data/daily/
   const today = new Date().toISOString().split('T')[0];
-  fetch(`data/daily/produccion_${today}.xlsx`)
-    .then(r => { if (!r.ok) throw new Error('not found'); return r.arrayBuffer(); })
-    .then(buf => {
-      const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
-      parseWorkbook(wb);
-      showToast(`✅ Datos de hoy cargados automáticamente`, 'success');
-    })
-    .catch(() => {
-      document.getElementById('topbar-subtitle').textContent = 'Sin datos — sube un archivo Excel para comenzar';
-    });
+  const tryFetch = url => fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null);
+
+  Promise.all([
+    tryFetch(`data/daily/Datos_produccion_${today}.xlsx`),
+    tryFetch(`data/daily/No_producidos_${today}.xlsx`),
+  ]).then(([buf1, buf2]) => {
+    const wb1 = buf1 ? XLSX.read(new Uint8Array(buf1), { type: 'array' }) : null;
+    const wb2 = buf2 ? XLSX.read(new Uint8Array(buf2), { type: 'array' }) : null;
+    if (wb1 || wb2) {
+      parseWorkbooks(wb1, wb2);
+      showToast('✅ Datos de hoy cargados automáticamente', 'success');
+    } else {
+      document.getElementById('topbar-subtitle').textContent = 'Sin datos — sube los archivos Excel para comenzar';
+    }
+  });
 });
 </script>
 </body>
