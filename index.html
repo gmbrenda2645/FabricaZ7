@@ -539,7 +539,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    v1.0 · Isopan Guatemala
+    v1.1 · Isopan Guatemala
   </div>
 </aside>
 
@@ -553,7 +553,12 @@
       <p id="topbar-subtitle">Cargando datos...</p>
     </div>
     <div class="topbar-right">
-      <div class="date-display" id="date-display">─</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label for="date-picker" style="font-size:.75rem;color:var(--gris-mid);white-space:nowrap;">📅 Fecha:</label>
+        <input type="date" id="date-picker"
+          style="border:1.5px solid var(--crema-dark);border-radius:8px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:.82rem;background:var(--crema);color:var(--gris-text);cursor:pointer;outline:none;"
+          onchange="loadDateFromServer(this.value)" />
+      </div>
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
         ⬆ Cargar Excel
       </button>
@@ -1125,23 +1130,51 @@ function exportTableCSV(tableId, name) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const today = new Date().toISOString().split('T')[0];
-  const tryFetch = url => fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null);
+// ─── Fecha local (Guatemala UTC-6) ───────────────────────────
+function getLocalDateString() {
+  // Usa la fecha según el reloj local del navegador, no UTC
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// ─── Cargar archivos desde el servidor por fecha ──────────────
+function loadDateFromServer(dateStr) {
+  if (!dateStr) return;
+  const tryFetch = url => fetch(url + '?v=' + Date.now())
+    .then(r => r.ok ? r.arrayBuffer() : null).catch(() => null);
+
+  document.getElementById('topbar-subtitle').textContent = 'Cargando datos de ' + dateStr + '...';
 
   Promise.all([
-    tryFetch(`data/daily/Datos_produccion_${today}.xlsx`),
-    tryFetch(`data/daily/No_producidos_${today}.xlsx`),
+    tryFetch(`data/daily/Datos_produccion_${dateStr}.xlsx`),
+    tryFetch(`data/daily/No_producidos_${dateStr}.xlsx`),
   ]).then(([buf1, buf2]) => {
     const wb1 = buf1 ? XLSX.read(new Uint8Array(buf1), { type: 'array' }) : null;
     const wb2 = buf2 ? XLSX.read(new Uint8Array(buf2), { type: 'array' }) : null;
     if (wb1 || wb2) {
       parseWorkbooks(wb1, wb2);
-      showToast('✅ Datos de hoy cargados automáticamente', 'success');
+      showToast('✅ Datos del ' + dateStr + ' cargados', 'success');
     } else {
-      document.getElementById('topbar-subtitle').textContent = 'Sin datos — sube los archivos Excel para comenzar';
+      document.getElementById('topbar-subtitle').textContent =
+        'No se encontraron archivos para ' + dateStr + '. Verifica los nombres en GitHub.';
+      showToast('⚠️ Sin datos para ' + dateStr, '');
     }
   });
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const today = getLocalDateString();
+
+  // Inicializa el date-picker con la fecha local de hoy
+  const picker = document.getElementById('date-picker');
+  if (picker) picker.value = today;
+
+  // Intenta cargar automáticamente los datos de hoy
+  loadDateFromServer(today);
 });
 </script>
 </body>
