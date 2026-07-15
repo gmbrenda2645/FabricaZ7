@@ -477,8 +477,8 @@ function buildFilterOptions(){
 
   const dates = state.raw.map(r=>r.fecha).filter(Boolean);
   if (dates.length){
-    const min = new Date(Math.min(...dates));
-    const max = new Date(Math.max(...dates));
+    let min = dates[0], max = dates[0];
+    for (const d of dates){ if (d < min) min = d; if (d > max) max = d; }
     document.getElementById('fDesde').value = isoDate(min);
     document.getElementById('fHasta').value = isoDate(max);
   }
