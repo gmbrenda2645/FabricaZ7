@@ -228,6 +228,39 @@
   }
   .participacion-fill{height:100%;background:var(--gold);border-radius:6px;}
   .participacion-pct{min-width:48px;text-align:right;font-weight:700;color:var(--ink);}
+
+  /* Weekly analysis section */
+  .weekly-section{
+    margin:32px 22px 10px;padding-top:22px;border-top:2px solid var(--maroon-800);
+  }
+  .weekly-header{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:12px;margin-bottom:16px;
+  }
+  .weekly-title{font-size:19px;font-weight:800;color:var(--maroon-800);}
+  .weekly-title .sub{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-top:2px;}
+  .week-picker{
+    display:flex;align-items:center;gap:8px;background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;padding:6px 12px;
+  }
+  .week-picker label{font-size:11px;font-weight:700;color:var(--maroon-700);text-transform:uppercase;letter-spacing:.04em;}
+  .week-picker select{border:none;background:transparent;font:inherit;font-size:13.5px;color:var(--ink);outline:none;}
+  .stat-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(160px,1fr));
+    gap:12px;margin-bottom:16px;
+  }
+  .stat-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 16px;
+  }
+  .stat-card .label{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+  .stat-card .value{font-size:24px;font-weight:800;color:var(--maroon-800);margin-top:4px;}
+  .stat-card .value.small{font-size:19px;}
+  .weekly-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;
+  }
+  @media (max-width:900px){ .weekly-grid{grid-template-columns:1fr;} }
+  .rank-badge.rN{background:#d9c3c3;color:var(--maroon-800);}
 </style>
 </head>
 <body>
@@ -279,6 +312,59 @@
 </div>
 
 <main id="mainArea"></main>
+
+<section class="weekly-section" id="weeklySection" style="display:none;">
+  <div class="weekly-header">
+    <div class="weekly-title">📅 Análisis Semanal
+      <span class="sub">Resumen automático — mismo formato de tu reporte manual, calculado semana por semana</span>
+    </div>
+    <div class="week-picker">
+      <label>Semana</label>
+      <select id="weekSelect"></select>
+    </div>
+  </div>
+
+  <div class="stat-grid" id="weekStats"></div>
+
+  <div class="weekly-grid">
+    <div class="panel exec-panel">
+      <div class="exec-banner">Top 5 tiendas con mayor DEVOLUCIÓN <span class="sub" id="weekLabelDev"></span></div>
+      <div class="table-wrap">
+        <table class="exec-table">
+          <thead><tr><th>#</th><th>Tienda</th><th class="num">Unid.</th><th>% dev. sem.</th></tr></thead>
+          <tbody id="tblWeekDev"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel exec-panel">
+      <div class="exec-banner">Top 5 tiendas con mayor MALA PRODUCCIÓN <span class="sub" id="weekLabelMp"></span></div>
+      <div class="table-wrap">
+        <table class="exec-table">
+          <thead><tr><th>#</th><th>Tienda</th><th class="num">Unid.</th><th>% mala prod. sem.</th></tr></thead>
+          <tbody id="tblWeekMp"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel exec-panel">
+      <div class="exec-banner">% por razón de Mala Producción</div>
+      <div class="table-wrap">
+        <table class="exec-table">
+          <thead><tr><th>Razón</th><th class="num">Unidades</th><th>% del total mala prod.</th></tr></thead>
+          <tbody id="tblWeekRazon"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel exec-panel">
+      <div class="exec-banner">Top 10 productos devueltos</div>
+      <div class="table-wrap">
+        <table class="exec-table">
+          <thead><tr><th>#</th><th>Producto</th><th class="num">Unid. dev.</th><th>% del total dev.</th></tr></thead>
+          <tbody id="tblWeekProd"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
 <footer>Panadería Isopan · Reporte de Devolución y Mala Producción</footer>
 
@@ -815,9 +901,139 @@ function renderAll(){
   renderCharts(groups);
   renderTiendaRanking();
   renderMotivos();
+  renderWeeklySection();
   const {desde, hasta} = getFilters();
   document.getElementById('rangeLabel').textContent = desde && hasta ? `${fmtDate(desde)} – ${fmtDate(hasta)}` : '';
 }
+
+/* ---------- Weekly analysis (ISO week) ---------- */
+function normStr(s){
+  return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function isDevolucion(razon){ return normStr(razon) === 'devolucion'; }
+
+function getISOWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { year: d.getUTCFullYear(), week };
+}
+function getISOWeekRange(year, week){
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay() || 7;
+  const start = new Date(simple);
+  start.setUTCDate(simple.getUTCDate() - dow + 1);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  return { start, end };
+}
+function buildWeeklyIndex(){
+  const map = new Map();
+  for (const r of state.raw){
+    if (!r.fecha) continue;
+    const { year, week } = getISOWeek(r.fecha);
+    const key = `${year}-W${String(week).padStart(2,'0')}`;
+    if (!map.has(key)) map.set(key, { key, year, week, rows: [] });
+    map.get(key).rows.push(r);
+  }
+  return [...map.values()].sort((a,b)=> b.year - a.year || b.week - a.week);
+}
+function rankBadge(i){ return i < 5 ? `r${i+1}` : 'rN'; }
+
+function renderWeeklySection(){
+  const weeks = buildWeeklyIndex();
+  const section = document.getElementById('weeklySection');
+  if (!weeks.length){ section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const select = document.getElementById('weekSelect');
+  const prevValue = select.value;
+  select.innerHTML = weeks.map(w=>{
+    const { start, end } = getISOWeekRange(w.year, w.week);
+    return `<option value="${w.key}">Semana ${w.week} (${w.year}) — ${fmtDate(start)} al ${fmtDate(end)}</option>`;
+  }).join('');
+  select.value = weeks.some(w=>w.key===prevValue) ? prevValue : weeks[0].key;
+
+  renderWeekData(weeks.find(w=>w.key===select.value) || weeks[0]);
+}
+
+function renderWeekData(weekObj){
+  if (!weekObj) return;
+  const rows = weekObj.rows;
+  const { start, end } = getISOWeekRange(weekObj.year, weekObj.week);
+  const rangeLabel = `${fmtDate(start)} al ${fmtDate(end)}`;
+
+  const totalUnidades = rows.reduce((s,r)=>s+r.total, 0);
+  const devRows = rows.filter(r=>isDevolucion(r.razon));
+  const mpRows = rows.filter(r=>!isDevolucion(r.razon));
+  const devolucion = devRows.reduce((s,r)=>s+r.total, 0);
+  const malaProduccion = totalUnidades - devolucion;
+  const pDev = pct(devolucion, totalUnidades);
+  const pMp = pct(malaProduccion, totalUnidades);
+
+  document.getElementById('weekStats').innerHTML = `
+    <div class="stat-card"><div class="label">Unidades totales</div><div class="value">${fmtInt(totalUnidades)}</div></div>
+    <div class="stat-card"><div class="label">Unid. devolución</div><div class="value">${fmtInt(devolucion)}</div></div>
+    <div class="stat-card"><div class="label">Unid. mala producción</div><div class="value">${fmtInt(malaProduccion)}</div></div>
+    <div class="stat-card"><div class="label">% Devolución</div><div class="value small">${fmtPct(pDev)}</div></div>
+    <div class="stat-card"><div class="label">% Mala Producción</div><div class="value small">${fmtPct(pMp)}</div></div>
+  `;
+  document.getElementById('weekLabelDev').textContent = rangeLabel;
+  document.getElementById('weekLabelMp').textContent = rangeLabel;
+
+  // Top 5 tiendas devolución
+  const tiendaDev = groupByTienda(devRows).slice(0,5);
+  document.getElementById('tblWeekDev').innerHTML = tiendaDev.map((t,i)=>`
+    <tr><td><span class="rank-badge ${rankBadge(i)}">${i+1}°</span></td><td>${t.tienda}</td>
+    <td class="num">${fmtInt(t.total)}</td>
+    <td><div class="participacion-cell"><div class="participacion-bar"><div class="participacion-fill" style="width:${pct(t.total,devolucion).toFixed(1)}%"></div></div><span class="participacion-pct">${pct(t.total,devolucion).toFixed(1)}%</span></div></td></tr>
+  `).join('') || `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--ink-soft);">Sin datos</td></tr>`;
+
+  // Top 5 tiendas mala producción
+  const tiendaMp = groupByTienda(mpRows).slice(0,5);
+  document.getElementById('tblWeekMp').innerHTML = tiendaMp.map((t,i)=>`
+    <tr><td><span class="rank-badge ${rankBadge(i)}">${i+1}°</span></td><td>${t.tienda}</td>
+    <td class="num">${fmtInt(t.total)}</td>
+    <td><div class="participacion-cell"><div class="participacion-bar"><div class="participacion-fill" style="width:${pct(t.total,malaProduccion).toFixed(1)}%"></div></div><span class="participacion-pct">${pct(t.total,malaProduccion).toFixed(1)}%</span></div></td></tr>
+  `).join('') || `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--ink-soft);">Sin datos</td></tr>`;
+
+  // % por razón de mala producción (excluye Devolución)
+  const razonMap = new Map();
+  for (const r of mpRows){
+    const key = r.razon && r.razon.trim() ? r.razon.trim() : '(sin razón)';
+    razonMap.set(key, (razonMap.get(key)||0) + r.total);
+  }
+  const razonList = [...razonMap.entries()].sort((a,b)=>b[1]-a[1]);
+  let razonHtml = razonList.map(([motivo, unidades])=>{
+    const p = pct(unidades, malaProduccion);
+    return `<tr><td>${motivo}</td><td class="num">${fmtInt(unidades)}</td>
+      <td><div class="participacion-cell"><div class="participacion-bar"><div class="participacion-fill" style="width:${p.toFixed(1)}%"></div></div><span class="participacion-pct">${p.toFixed(1)}%</span></div></td></tr>`;
+  }).join('');
+  razonHtml += `<tr class="total-row"><td>Total</td><td class="num">${fmtInt(malaProduccion)}</td><td>100%</td></tr>`;
+  document.getElementById('tblWeekRazon').innerHTML = razonHtml || `<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--ink-soft);">Sin datos</td></tr>`;
+
+  // Top 10 productos devueltos
+  const prodMap = new Map();
+  for (const r of devRows){
+    const key = `${r.codigo} ${r.producto}`;
+    prodMap.set(key, (prodMap.get(key)||0) + r.total);
+  }
+  const prodList = [...prodMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('tblWeekProd').innerHTML = prodList.map(([prod, unidades], i)=>{
+    const p = pct(unidades, devolucion);
+    return `<tr><td><span class="rank-badge ${rankBadge(i)}">${i+1}°</span></td><td>${prod}</td>
+      <td class="num">${fmtInt(unidades)}</td>
+      <td><div class="participacion-cell"><div class="participacion-bar"><div class="participacion-fill" style="width:${p.toFixed(1)}%"></div></div><span class="participacion-pct">${p.toFixed(1)}%</span></div></td></tr>`;
+  }).join('') || `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--ink-soft);">Sin datos</td></tr>`;
+}
+
+document.getElementById('weekSelect').addEventListener('change', ()=>{
+  const weeks = buildWeeklyIndex();
+  const w = weeks.find(w=>w.key === document.getElementById('weekSelect').value);
+  renderWeekData(w);
+});
 
 /* ---------- Manual upload ---------- */
 document.getElementById('btnUpload').addEventListener('click', ()=> document.getElementById('fileInput').click());
