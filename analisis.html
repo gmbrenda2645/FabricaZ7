@@ -566,35 +566,80 @@ function parseHoja1(wb){
   // Try hoja1 first, fallback to first sheet
   const wsName = wb.SheetNames.find(n=>n.toLowerCase().replace(/\s/g,'')===`hoja1`) || wb.SheetNames[0];
   const ws = wb.Sheets[wsName];
-  const raw = XLSX.utils.sheet_to_json(ws,{raw:true,defval:''});
 
-  // The sheet has two sub-tables separated by header rows. Filter valid data rows.
-  RAW = raw.filter(r=>{
-    const doc = r['no_documento'] || r['No_documento'] || r['NO_DOCUMENTO'] || '';
-    const org = r['organizacion'] || r['Organizacion'] || '';
-    if(!doc || typeof doc!=='string') return false;
-    const prefix = doc.substring(0,2);
-    return ['OD','OP','PR'].includes(prefix);
-  }).map(r=>{
-    const fechaPlan = Number(r['fecha_plan']||r['Fecha_plan']||0);
-    const fechaFin  = Number(r['fecha_fin'] ||r['Fecha_fin'] ||0);
-    const cantPlan  = Number(r['cant_plan'] ||r['Cant_plan'] ||0);
-    const totProd   = Number(r['total_producido']||r['Total_producido']||r['Producido']||0);
-    const uBuenas   = Number(r['u_buenas']  ||r['U_buenas']  ||0);
-    const uMalas    = Number(r['u_malas']   ||r['U_malas']   ||0);
-    const rend      = Number(r['rendimiento_%']||r['Rendimiento_%']||r['rendimiento']||0);
-    const merma     = Number(r['merma_%']   ||r['Merma_%']   ||r['merma']   ||0);
-    const centro    = String(r['centro']    ||r['Centro']    ||'').trim();
-    const org       = String(r['organizacion']||r['Organizacion']||'').trim();
-    const prod      = String(r['producido'] ||r['Producto']  ||'').trim();
-    const cod       = String(r['codigo_producido']||r['Codigo_producido']||'').trim();
-    const doc       = String(r['no_documento']||r['No_documento']||'').trim();
-    const estado    = String(r['estado']    ||r['Estado']    ||'').trim();
-    const dateObj   = fechaPlan>40000 ? excelToDate(fechaPlan) : null;
-    const dateStr   = dateObj ? dateToStr(dateObj) : '';
-    return {doc,cod,prod,centro,org,cantPlan,totProd,uBuenas,uMalas,
-            rend,merma,estado,fechaPlan,fechaFin,dateStr,dateObj};
-  }).filter(r=>r.cantPlan>0 && r.totProd>0);
+  // Read as array-of-arrays so we control header detection ourselves.
+  // The sheet has this structure:
+  //   Row 1: "Resultado de la Produccion" (title - NOT a header)
+  //   Row 2: "organizacion: FABRICA ZONA 7"
+  //   Row 3: no_documento | fecha_plan | ... (real column headers)
+  //   Row 4+: data rows
+  //   Row N:  "organizacion: FABRICA UTATLAN"
+  //   Row N+1: no_documento | fecha_plan | ... (headers again)
+  //   Row N+2+: data rows
+  const arrOfArr = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''});
+
+  // Detect header rows (contain 'no_documento' in first column, case-insensitive)
+  let headers = null;
+  let currentOrg = '';
+  const rows = [];
+
+  for(const row of arrOfArr){
+    const c0 = String(row[0]||'').trim().toLowerCase();
+
+    // Section label: "organizacion: FABRICA ZONA 7"
+    if(c0.startsWith('organizacion:')){
+      currentOrg = String(row[0]).replace(/^organizacion:\s*/i,'').trim();
+      continue;
+    }
+
+    // Header row: first cell is 'no_documento'
+    if(c0 === 'no_documento'){
+      headers = row.map(h => String(h||'').trim().toLowerCase());
+      continue;
+    }
+
+    // Skip rows before we've found headers, or rows without data
+    if(!headers) continue;
+    const docVal = String(row[0]||'').trim();
+    if(!docVal || !['OD','OP','PR'].includes(docVal.substring(0,2))) continue;
+
+    // Map row to object using current headers
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+    // Inject organization from section label if column is missing/empty
+    if(!obj['organizacion'] || obj['organizacion']==='') obj['organizacion'] = currentOrg;
+    rows.push(obj);
+  }
+
+  // Helper: fecha can be a JS Date (SheetJS parses date-formatted cells automatically),
+  // an Excel serial number, or a string.
+  function toDateObj(val){
+    if(!val || val==='') return null;
+    if(val instanceof Date) return val;
+    const n = Number(val);
+    if(!isNaN(n) && n > 40000) return excelToDate(n);
+    return null;
+  }
+
+  RAW = rows.map(r=>{
+    const dateObj = toDateObj(r['fecha_plan']);
+    const dateStr = dateObj ? dateToStr(dateObj) : '';
+    return {
+      doc:      String(r['no_documento']     ||'').trim(),
+      cod:      String(r['codigo_producido'] ||'').trim(),
+      prod:     String(r['producido']        ||'').trim(),
+      centro:   String(r['centro']           ||'').trim(),
+      org:      String(r['organizacion']     ||'').trim(),
+      cantPlan: Number(r['cant_plan'])        ||0,
+      totProd:  Number(r['total_producido']) ||0,
+      uBuenas:  Number(r['u_buenas'])        ||0,
+      uMalas:   Number(r['u_malas'])         ||0,
+      rend:     Number(r['rendimiento_%'])   ||0,
+      merma:    Number(r['merma_%'])         ||0,
+      estado:   String(r['estado']           ||'').trim(),
+      dateObj, dateStr,
+    };
+  }).filter(r => r.cantPlan > 0 && r.totProd > 0);
 
   // populate date pickers
   const dates = RAW.map(r=>r.dateStr).filter(Boolean).sort();
