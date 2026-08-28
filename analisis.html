@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Análisis FPY Semanal · Isopan Zona 7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --brown:    #7B3A10;
+  --brown-dk: #4E2409;
+  --gold:     #C8920A;
+  --gold-lt:  #E8B84B;
+  --cream:    #FBF6EE;
+  --cream-dk: #F0E6D3;
+  --white:    #FFFFFF;
+  --ink:      #1A0E05;
+  --ink-mid:  #5C3C20;
+  --ink-lt:   #9C7A58;
+  --green:    #2D6A4F;
+  --red:      #B23A2E;
+  --blue:     #1A4F78;
+  --rad:      8px;
+  --rad-lg:   14px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  min-height:100vh;
+}
+
+/* ── HEADER ──────────────────────────────── */
+.site-header{
+  background:var(--brown-dk);
+  padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+  position:sticky;top:0;z-index:100;
+  border-bottom:3px solid var(--gold);
+}
+.header-brand{
+  font-family:'Syne',sans-serif;
+  font-size:.85rem;font-weight:700;letter-spacing:.12em;
+  color:var(--gold-lt);text-transform:uppercase;
+}
+.header-brand span{color:rgba(255,255,255,.45);font-weight:400}
+.header-right{display:flex;align-items:center;gap:12px}
+.upload-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--gold);color:#fff;
+  border:none;border-radius:20px;
+  padding:6px 14px;
+  font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;
+  cursor:pointer;transition:background .18s;
+}
+.upload-pill:hover{background:var(--brown)}
+.upload-pill svg{width:14px;height:14px;flex-shrink:0}
+#fileInput{display:none}
+
+/* ── HERO / KPI STRIP ────────────────────── */
+.hero{
+  background:linear-gradient(135deg,var(--brown-dk) 0%,var(--brown) 55%,#A0522D 100%);
+  padding:36px 40px 30px;
+  color:#fff;
+}
+.hero-eyebrow{
+  font-family:'DM Mono',monospace;
+  font-size:.7rem;letter-spacing:.2em;
+  color:var(--gold-lt);text-transform:uppercase;margin-bottom:10px;
+}
+.hero-title{
+  font-family:'Syne',sans-serif;
+  font-size:2rem;font-weight:800;line-height:1.1;
+  margin-bottom:6px;
+}
+.hero-sub{font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:28px}
+
+.kpi-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:14px;
+}
+.kpi-card{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--rad-lg);
+  padding:16px 18px;
+  transition:background .15s;
+}
+.kpi-card:hover{background:rgba(255,255,255,.13)}
+.kpi-label{
+  font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);margin-bottom:6px;
+}
+.kpi-value{
+  font-family:'Syne',sans-serif;
+  font-size:1.75rem;font-weight:800;color:#fff;line-height:1;
+}
+.kpi-value.good{color:#7FEBA2}
+.kpi-value.warn{color:var(--gold-lt)}
+.kpi-value.bad {color:#F4877B}
+.kpi-sub{font-size:.73rem;color:rgba(255,255,255,.4);margin-top:5px}
+
+/* ── MAIN LAYOUT ─────────────────────────── */
+.main-wrap{
+  max-width:1360px;margin:0 auto;padding:32px 32px 60px;
+  display:flex;flex-direction:column;gap:28px;
+}
+
+/* ── SECTION CARD ────────────────────────── */
+.panel{
+  background:var(--white);
+  border-radius:var(--rad-lg);
+  box-shadow:0 2px 12px rgba(123,58,16,.08);
+  overflow:hidden;
+}
+.panel-head{
+  background:var(--brown);
+  padding:14px 22px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+}
+.panel-head h2{
+  font-family:'Syne',sans-serif;
+  font-size:.95rem;font-weight:700;color:#fff;letter-spacing:.05em;
+}
+.panel-body{padding:22px}
+
+/* ── CONTROLS ROW ─────────────────────────── */
+.controls-row{
+  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+  background:var(--cream);
+  border-radius:var(--rad);
+  padding:16px 20px;
+  margin-bottom:22px;
+  border:1px solid var(--cream-dk);
+}
+.ctrl-group{display:flex;flex-direction:column;gap:5px}
+.ctrl-group label{
+  font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-lt);font-weight:500;
+}
+.ctrl-group select,
+.ctrl-group input[type="date"]{
+  border:1.5px solid var(--cream-dk);
+  border-radius:var(--rad);
+  padding:7px 12px;
+  font-family:'DM Sans',sans-serif;font-size:.85rem;
+  background:#fff;color:var(--ink);
+  outline:none;cursor:pointer;
+  transition:border-color .18s;
+  min-width:160px;
+}
+.ctrl-group select:focus,
+.ctrl-group input:focus{border-color:var(--gold)}
+.ctrl-btn{
+  background:var(--brown);color:#fff;
+  border:none;border-radius:var(--rad);
+  padding:8px 18px;
+  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;
+  cursor:pointer;align-self:flex-end;
+  transition:background .18s,transform .12s;
+}
+.ctrl-btn:hover{background:var(--gold);transform:translateY(-1px)}
+
+/* ── FPY CHART ───────────────────────────── */
+.fpy-chart-wrap{
+  overflow-x:auto;padding-bottom:4px;
+}
+.fpy-chart{
+  display:flex;flex-direction:column;gap:10px;
+  min-width:600px;
+}
+.week-row{display:flex;align-items:center;gap:12px}
+.week-label{
+  font-family:'DM Mono',monospace;
+  font-size:.72rem;color:var(--ink-lt);
+  width:80px;flex-shrink:0;text-align:right;
+}
+.bars-group{flex:1;display:flex;flex-direction:column;gap:4px}
+.bar-line{display:flex;align-items:center;gap:8px}
+.bar-plant{
+  font-size:.68rem;color:var(--ink-lt);
+  width:100px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.bar-track{
+  flex:1;height:18px;
+  background:var(--cream-dk);
+  border-radius:4px;overflow:hidden;
+  position:relative;
+}
+.bar-fill{
+  height:100%;border-radius:4px;
+  transition:width .5s ease;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:6px;
+}
+.bar-fill span{
+  font-family:'DM Mono',monospace;
+  font-size:.66rem;font-weight:500;color:#fff;
+  white-space:nowrap;
+}
+.bar-pct{
+  font-family:'DM Mono',monospace;
+  font-size:.72rem;font-weight:500;color:var(--ink);
+  width:52px;flex-shrink:0;
+}
+.bar-zona7  .bar-fill{background:linear-gradient(90deg,var(--brown),var(--gold))}
+.bar-utatlan .bar-fill{background:linear-gradient(90deg,var(--blue),#2980B9)}
+.bar-global  .bar-fill{background:linear-gradient(90deg,var(--green),#52B788)}
+
+/* reference line at 97% */
+.bar-track::after{
+  content:'';
+  position:absolute;top:0;bottom:0;
+  width:1.5px;background:rgba(180,0,0,.35);
+  left:var(--ref-pos);
+}
+
+/* ── FPY TABLE ────────────────────────────── */
+.fpy-table-wrap{overflow-x:auto;margin-top:20px}
+.data-table{
+  width:100%;border-collapse:collapse;font-size:.83rem;
+}
+.data-table thead tr{background:var(--brown);color:#fff}
+.data-table thead th{
+  padding:10px 14px;text-align:center;
+  font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:600;white-space:nowrap;
+}
+.data-table thead th:first-child{text-align:left}
+.data-table tbody tr{border-bottom:1px solid var(--cream-dk);transition:background .1s}
+.data-table tbody tr:hover{background:var(--cream)}
+.data-table tbody tr:last-child{border-bottom:none;background:var(--cream-dk);font-weight:600}
+.data-table tbody td{padding:9px 14px;text-align:center;white-space:nowrap}
+.data-table tbody td:first-child{text-align:left;font-weight:500}
+.fpy-badge{
+  display:inline-block;
+  padding:2px 8px;border-radius:20px;
+  font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;
+}
+.fpy-hi  {background:#D5F5E3;color:#1B6B3A}
+.fpy-mid {background:#FFF3CD;color:#856404}
+.fpy-lo  {background:#FADBD8;color:#922B21}
+
+/* ── CENTRO CHART ─────────────────────────── */
+.centro-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:14px;
+}
+.centro-card{
+  background:var(--cream);
+  border:1px solid var(--cream-dk);
+  border-radius:var(--rad);
+  padding:14px 16px;
+}
+.centro-card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.centro-name{
+  font-size:.82rem;font-weight:600;color:var(--brown-dk);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;
+}
+.centro-org{
+  font-size:.65rem;color:var(--ink-lt);
+  background:var(--cream-dk);
+  padding:2px 7px;border-radius:10px;
+  flex-shrink:0;
+}
+.centro-metrics{display:flex;flex-direction:column;gap:7px}
+.metric-row{display:flex;align-items:center;gap:8px}
+.metric-name{font-size:.68rem;color:var(--ink-lt);width:80px;flex-shrink:0}
+.metric-bar{flex:1;height:10px;background:var(--cream-dk);border-radius:4px;overflow:hidden}
+.metric-bar-fill{height:100%;border-radius:4px}
+.rend-fill{background:linear-gradient(90deg,var(--brown),var(--gold))}
+.merma-fill{background:linear-gradient(90deg,var(--red),#E67E22)}
+.metric-val{font-family:'DM Mono',monospace;font-size:.72rem;width:52px;text-align:right;font-weight:500}
+
+/* ── TOP 5 TABLES ─────────────────────────── */
+.tops-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:800px){.tops-row{grid-template-columns:1fr}}
+.top-section h3{
+  font-family:'Syne',sans-serif;
+  font-size:.85rem;font-weight:700;
+  color:var(--brown);margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ── EMPTY / UPLOAD HINT ──────────────────── */
+.empty-state{
+  text-align:center;padding:50px 20px;
+  color:var(--ink-lt);
+}
+.empty-state .icon{font-size:2.8rem;margin-bottom:12px}
+.empty-state p{font-size:.9rem}
+.drop-zone{
+  border:2px dashed var(--cream-dk);
+  border-radius:var(--rad-lg);
+  padding:40px;text-align:center;
+  cursor:pointer;
+  transition:border-color .18s,background .18s;
+  background:var(--cream);color:var(--ink-lt);
+  font-size:.87rem;
+}
+.drop-zone:hover,.drop-zone.over{border-color:var(--gold);background:#FFF8EA}
+.drop-zone p{margin-top:10px}
+.drop-zone small{font-size:.76rem;opacity:.65}
+
+/* ── TOAST ────────────────────────────────── */
+.toast{
+  position:fixed;bottom:22px;right:22px;
+  background:var(--brown-dk);color:#fff;
+  padding:11px 18px;border-radius:var(--rad);
+  font-size:.83rem;z-index:999;
+  opacity:0;transform:translateY(8px);
+  transition:all .25s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{background:var(--green)}
+.toast.err{background:var(--red)}
+
+/* ── LEGEND ───────────────────────────────── */
+.legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--ink-lt)}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+@media(max-width:640px){
+  .hero{padding:24px 20px 22px}
+  .hero-title{font-size:1.45rem}
+  .main-wrap{padding:18px 16px 40px}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .tops-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-brand">
+    🥖 Isopan <span>/ Análisis FPY Semanal</span>
+  </div>
+  <div class="header-right">
+    <button class="upload-pill" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Cargar Excel
+    </button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadFile(event)"/>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-eyebrow">Fábrica Zona 7 · Panadería Isopan</div>
+  <h1 class="hero-title">Análisis de Producción<br>& Índice FPY Semanal</h1>
+  <p class="hero-sub" id="hero-sub">Carga el archivo Excel para ver los indicadores</p>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">FPY Global</div>
+      <div class="kpi-value" id="kpi-fpy-global">—</div>
+      <div class="kpi-sub">promedio ponderado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">FPY Zona 7</div>
+      <div class="kpi-value" id="kpi-fpy-z7">—</div>
+      <div class="kpi-sub">ponderado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">FPY Utatlan</div>
+      <div class="kpi-value" id="kpi-fpy-ut">—</div>
+      <div class="kpi-sub">ponderado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Rend. Ponderado</div>
+      <div class="kpi-value" id="kpi-rend">—</div>
+      <div class="kpi-sub">producido / planificado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Merma Global</div>
+      <div class="kpi-value" id="kpi-merma">—</div>
+      <div class="kpi-sub">unidades malas / buenas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Órdenes</div>
+      <div class="kpi-value" id="kpi-ordenes">—</div>
+      <div class="kpi-sub">en el período</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<div class="main-wrap">
+
+  <!-- CONTROLES DE FECHA -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>📅 Filtro de período</h2>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#7B3A10,#C8920A)"></div>Zona 7</div>
+        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#1A4F78,#2980B9)"></div>Utatlan</div>
+        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#2D6A4F,#52B788)"></div>Global</div>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="controls-row">
+        <div class="ctrl-group">
+          <label>Desde</label>
+          <input type="date" id="from-date"/>
+        </div>
+        <div class="ctrl-group">
+          <label>Hasta</label>
+          <input type="date" id="to-date"/>
+        </div>
+        <div class="ctrl-group">
+          <label>Planta</label>
+          <select id="planta-sel">
+            <option value="all">Todas las plantas</option>
+            <option value="FABRICA ZONA 7">Fábrica Zona 7</option>
+            <option value="FABRICA UTATLAN">Fábrica Utatlan</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Centro</label>
+          <select id="centro-sel">
+            <option value="all">Todos los centros</option>
+          </select>
+        </div>
+        <button class="ctrl-btn" onclick="applyFilters()">Aplicar ▶</button>
+        <button class="ctrl-btn" style="background:transparent;color:var(--ink-lt);border:1px solid var(--cream-dk)" onclick="resetFilters()">Restablecer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FPY SEMANAL -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>📈 FPY Semanal (First Pass Yield)</h2>
+      <span style="font-size:.75rem;color:rgba(255,255,255,.6)">FPY = Unidades buenas / Total producido</span>
+    </div>
+    <div class="panel-body" id="fpy-body">
+      <div class="empty-state">
+        <div class="icon">🍞</div>
+        <p>Carga un archivo Excel para ver el FPY semanal</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FPY TABLE -->
+  <div class="panel">
+    <div class="panel-head"><h2>🗂 Tabla FPY por semana y planta</h2></div>
+    <div class="panel-body" id="fpy-table-body">
+      <div class="empty-state"><div class="icon">📊</div><p>Sin datos</p></div>
+    </div>
+  </div>
+
+  <!-- CENTROS -->
+  <div class="panel">
+    <div class="panel-head"><h2>🏭 Rendimiento y Merma por Centro</h2></div>
+    <div class="panel-body" id="centros-body">
+      <div class="empty-state"><div class="icon">🏭</div><p>Sin datos</p></div>
+    </div>
+  </div>
+
+  <!-- TOP 5 -->
+  <div class="panel">
+    <div class="panel-head"><h2>🏆 Top 5 Productos</h2></div>
+    <div class="panel-body" id="top5-body">
+      <div class="empty-state"><div class="icon">🥐</div><p>Sin datos</p></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD AREA -->
+  <div class="panel">
+    <div class="panel-head"><h2>⬆ Cargar archivo</h2></div>
+    <div class="panel-body">
+      <div class="drop-zone" id="dz" onclick="document.getElementById('fileInput').click()">
+        <div style="font-size:2rem">📂</div>
+        <p><strong>Arrastra el Excel aquí</strong> o haz clic para seleccionar</p>
+        <small>Archivo semanal con hoja "hoja1" · Columnas: no_documento, fecha_plan, fecha_fin, codigo_producido, producido, centro, cant_plan, total_producido, u_buenas, u_malas, rendimiento_%, merma_%, estado, organizacion</small>
+      </div>
+      <div style="margin-top:16px;background:var(--cream);border-radius:var(--rad);padding:16px;font-size:.82rem;color:var(--ink-lt);">
+        <strong style="color:var(--brown)">📋 Nombre de archivo sugerido para GitHub:</strong><br>
+        <code style="background:#fff;padding:3px 8px;border-radius:4px;border:1px solid var(--cream-dk);display:inline-block;margin-top:6px">Analisis_produccion_YYYY-MM-DD.xlsx</code><br>
+        <span style="margin-top:8px;display:block">El tablero carga automáticamente el archivo de la semana en curso desde <code>data/weekly/</code></span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Helpers ───────────────────────────────────
+const EXCL_CENTROS = ['CENTRO INTERMEDIO ZONA 7','CENTRO INTERMEDIO UTATLAN','REEMPAQUE'];
+const EXCEL_EPOCH  = 25569; // days between 1899-12-30 and 1970-01-01
+
+function excelToDate(n){
+  const d = new Date((n - EXCEL_EPOCH)*86400*1000);
+  return d;
+}
+function dateToStr(d){
+  return d.toISOString().split('T')[0];
+}
+function excelToStr(n){
+  if(!n || isNaN(n)) return '';
+  return dateToStr(excelToDate(n));
+}
+function pct(v,decimals=2){
+  return (v*100).toFixed(decimals)+'%';
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',3200);
+}
+function fmtN(n){return n.toLocaleString('es-GT')}
+
+// ── State ─────────────────────────────────────
+let RAW = [];   // parsed rows from hoja1 (ZONA 7 only or both)
+let FILTERED = [];
+let WEEKS = [];
+
+// ── ISO week helper ────────────────────────────
+function isoWeek(d){
+  const dt = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  dt.setUTCDate(dt.getUTCDate()+4-(dt.getUTCDay()||7));
+  const y = dt.getUTCFullYear();
+  const w = Math.ceil((((dt-new Date(Date.UTC(y,0,1)))/86400000)+1)/7);
+  return {y,w,key:`${y}-S${String(w).padStart(2,'0')}`};
+}
+function weekRange(y,w){
+  const simple=new Date(y,0,1+((w-1)*7));
+  const day=simple.getDay();
+  const mon=new Date(simple);
+  mon.setDate(simple.getDate()-(day||7)+1);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  return `${mon.toLocaleDateString('es-GT',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('es-GT',{day:'2-digit',month:'short'})}`;
+}
+
+// ── File loading ───────────────────────────────
+function loadFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      parseHoja1(wb);
+      toast(`✅ ${f.name} cargado`,`ok`);
+    }catch(err){toast('Error: '+err.message,'err')}
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function parseHoja1(wb){
+  // Try hoja1 first, fallback to first sheet
+  const wsName = wb.SheetNames.find(n=>n.toLowerCase().replace(/\s/g,'')===`hoja1`) || wb.SheetNames[0];
+  const ws = wb.Sheets[wsName];
+
+  // Read as array-of-arrays so we control header detection ourselves.
+  // The sheet has this structure:
+  //   Row 1: "Resultado de la Produccion" (title - NOT a header)
+  //   Row 2: "organizacion: FABRICA ZONA 7"
+  //   Row 3: no_documento | fecha_plan | ... (real column headers)
+  //   Row 4+: data rows
+  //   Row N:  "organizacion: FABRICA UTATLAN"
+  //   Row N+1: no_documento | fecha_plan | ... (headers again)
+  //   Row N+2+: data rows
+  const arrOfArr = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''});
+
+  // Detect header rows (contain 'no_documento' in first column, case-insensitive)
+  let headers = null;
+  let currentOrg = '';
+  const rows = [];
+
+  for(const row of arrOfArr){
+    const c0 = String(row[0]||'').trim().toLowerCase();
+
+    // Section label: "organizacion: FABRICA ZONA 7"
+    if(c0.startsWith('organizacion:')){
+      currentOrg = String(row[0]).replace(/^organizacion:\s*/i,'').trim();
+      continue;
+    }
+
+    // Header row: first cell is 'no_documento'
+    if(c0 === 'no_documento'){
+      headers = row.map(h => String(h||'').trim().toLowerCase());
+      continue;
+    }
+
+    // Skip rows before we've found headers, or rows without data
+    if(!headers) continue;
+    const docVal = String(row[0]||'').trim();
+    if(!docVal || !['OD','OP','PR'].includes(docVal.substring(0,2))) continue;
+
+    // Map row to object using current headers
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+    // Inject organization from section label if column is missing/empty
+    if(!obj['organizacion'] || obj['organizacion']==='') obj['organizacion'] = currentOrg;
+    rows.push(obj);
+  }
+
+  // Helper: fecha can be a JS Date (SheetJS parses date-formatted cells automatically),
+  // an Excel serial number, or a string.
+  function toDateObj(val){
+    if(!val || val==='') return null;
+    if(val instanceof Date) return val;
+    const n = Number(val);
+    if(!isNaN(n) && n > 40000) return excelToDate(n);
+    return null;
+  }
+
+  RAW = rows.map(r=>{
+    const dateObj = toDateObj(r['fecha_plan']);
+    const dateStr = dateObj ? dateToStr(dateObj) : '';
+    return {
+      doc:      String(r['no_documento']     ||'').trim(),
+      cod:      String(r['codigo_producido'] ||'').trim(),
+      prod:     String(r['producido']        ||'').trim(),
+      centro:   String(r['centro']           ||'').trim(),
+      org:      String(r['organizacion']     ||'').trim(),
+      cantPlan: Number(r['cant_plan'])        ||0,
+      totProd:  Number(r['total_producido']) ||0,
+      uBuenas:  Number(r['u_buenas'])        ||0,
+      uMalas:   Number(r['u_malas'])         ||0,
+      rend:     Number(r['rendimiento_%'])   ||0,
+      merma:    Number(r['merma_%'])         ||0,
+      estado:   String(r['estado']           ||'').trim(),
+      dateObj, dateStr,
+    };
+  }).filter(r => r.cantPlan > 0 && r.totProd > 0);
+
+  // populate date pickers
+  const dates = RAW.map(r=>r.dateStr).filter(Boolean).sort();
+  if(dates.length){
+    document.getElementById('from-date').value=dates[0];
+    document.getElementById('to-date').value=dates[dates.length-1];
+  }
+
+  // populate centro select
+  const centros=[...new Set(RAW.map(r=>r.centro))].sort();
+  const cSel=document.getElementById('centro-sel');
+  cSel.innerHTML='<option value="all">Todos los centros</option>';
+  centros.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c;o.textContent=c;cSel.appendChild(o);
+  });
+
+  applyFilters();
+}
+
+// ── Filters ───────────────────────────────────
+function applyFilters(){
+  if(!RAW.length) return;
+  const from   = document.getElementById('from-date').value;
+  const to     = document.getElementById('to-date').value;
+  const planta = document.getElementById('planta-sel').value;
+  const centro = document.getElementById('centro-sel').value;
+
+  FILTERED = RAW.filter(r=>{
+    if(from && r.dateStr < from) return false;
+    if(to   && r.dateStr > to  ) return false;
+    if(planta!=='all' && r.org!==planta) return false;
+    if(centro!=='all' && r.centro!==centro) return false;
+    return true;
+  });
+
+  const label = from&&to ? `${from} al ${to}` : `Todos los registros`;
+  document.getElementById('hero-sub').textContent = `${fmtN(FILTERED.length)} órdenes · ${label}`;
+
+  renderKPIs();
+  renderFPYChart();
+  renderFPYTable();
+  renderCentros();
+  renderTop5();
+}
+function resetFilters(){
+  const dates=RAW.map(r=>r.dateStr).filter(Boolean).sort();
+  if(dates.length){
+    document.getElementById('from-date').value=dates[0];
+    document.getElementById('to-date').value=dates[dates.length-1];
+  }
+  document.getElementById('planta-sel').value='all';
+  document.getElementById('centro-sel').value='all';
+  applyFilters();
+}
+
+// ── KPI render ────────────────────────────────
+function computeFPY(rows){
+  const tot=rows.reduce((s,r)=>s+r.totProd,0);
+  const bue=rows.reduce((s,r)=>s+r.uBuenas,0);
+  return tot>0?bue/tot:0;
+}
+function renderKPIs(){
+  const z7 = FILTERED.filter(r=>r.org==='FABRICA ZONA 7');
+  const ut = FILTERED.filter(r=>r.org==='FABRICA UTATLAN');
+  const gl = FILTERED;
+
+  const fGl=computeFPY(gl), fZ7=computeFPY(z7), fUt=computeFPY(ut);
+  const plan=gl.reduce((s,r)=>s+r.cantPlan,0);
+  const prod=gl.reduce((s,r)=>s+r.totProd,0);
+  const bue=gl.reduce((s,r)=>s+r.uBuenas,0);
+  const mal=gl.reduce((s,r)=>s+r.uMalas,0);
+  const rend=plan>0?prod/plan:0;
+  const merma=bue>0?mal/bue:0;
+
+  function cls(v){return v>=0.98?'good':v>=0.95?'warn':'bad'}
+
+  document.getElementById('kpi-fpy-global').className='kpi-value '+cls(fGl);
+  document.getElementById('kpi-fpy-global').textContent=pct(fGl);
+  document.getElementById('kpi-fpy-z7').className='kpi-value '+cls(fZ7);
+  document.getElementById('kpi-fpy-z7').textContent=fZ7>0?pct(fZ7):'—';
+  document.getElementById('kpi-fpy-ut').className='kpi-value '+cls(fUt);
+  document.getElementById('kpi-fpy-ut').textContent=fUt>0?pct(fUt):'—';
+  document.getElementById('kpi-rend').className='kpi-value '+(rend>=1?'good':rend>=0.95?'warn':'bad');
+  document.getElementById('kpi-rend').textContent=pct(rend);
+  document.getElementById('kpi-merma').className='kpi-value '+(merma<0.02?'good':merma<0.05?'warn':'bad');
+  document.getElementById('kpi-merma').textContent=pct(merma);
+  document.getElementById('kpi-ordenes').className='kpi-value';
+  document.getElementById('kpi-ordenes').textContent=fmtN(gl.length);
+}
+
+// ── FPY Chart ─────────────────────────────────
+function renderFPYChart(){
+  if(!FILTERED.length){
+    document.getElementById('fpy-body').innerHTML='<div class="empty-state"><div class="icon">📈</div><p>Sin datos para el período seleccionado</p></div>';
+    return;
+  }
+
+  // group by ISO week
+  const byWeek={};
+  FILTERED.forEach(r=>{
+    if(!r.dateObj) return;
+    const wk=isoWeek(r.dateObj);
+    if(!byWeek[wk.key]) byWeek[wk.key]={key:wk.key,y:wk.y,w:wk.w,z7:{tot:0,bue:0},ut:{tot:0,bue:0},gl:{tot:0,bue:0}};
+    const entry=byWeek[wk.key];
+    entry.gl.tot+=r.totProd; entry.gl.bue+=r.uBuenas;
+    if(r.org==='FABRICA ZONA 7'){entry.z7.tot+=r.totProd;entry.z7.bue+=r.uBuenas;}
+    else{entry.ut.tot+=r.totProd;entry.ut.bue+=r.uBuenas;}
+  });
+
+  const weeks=Object.values(byWeek).sort((a,b)=>a.key.localeCompare(b.key));
+  WEEKS=weeks;
+
+  // reference line at 97% → 97/100 of bar width
+  const REF=97;
+  const rows=weeks.map(wk=>{
+    const fz7=wk.z7.tot>0?wk.z7.bue/wk.z7.tot*100:null;
+    const fut=wk.ut.tot>0?wk.ut.bue/wk.ut.tot*100:null;
+    const fgl=wk.gl.bue/wk.gl.tot*100;
+    const range=weekRange(wk.y,wk.w);
+
+    const makeLine=(val,cls,label)=>{
+      if(val===null) return '';
+      const w=Math.min(val,105);
+      return `<div class="bar-line ${cls}">
+        <div class="bar-plant">${label}</div>
+        <div class="bar-track" style="--ref-pos:${REF}%">
+          <div class="bar-fill" style="width:${w}%"><span>${val.toFixed(2)}%</span></div>
+        </div>
+        <div class="bar-pct">${badgeFPY(val/100)}</div>
+      </div>`;
+    };
+
+    return `<div class="week-row">
+      <div class="week-label"><strong>Sem ${wk.w}</strong><br><span style="font-size:.62rem">${range}</span></div>
+      <div class="bars-group">
+        ${makeLine(fgl,'bar-global','Global')}
+        ${makeLine(fz7,'bar-zona7','Zona 7')}
+        ${makeLine(fut,'bar-utatlan','Utatlan')}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fpy-body').innerHTML=`
+    <p style="font-size:.76rem;color:var(--ink-lt);margin-bottom:14px">
+      La línea roja vertical indica el objetivo de referencia de <strong>97%</strong>.
+    </p>
+    <div class="fpy-chart-wrap"><div class="fpy-chart">${rows}</div></div>`;
+}
+
+function badgeFPY(v){
+  const s=pct(v);
+  const cls=v>=0.98?'fpy-hi':v>=0.95?'fpy-mid':'fpy-lo';
+  return `<span class="fpy-badge ${cls}">${s}</span>`;
+}
+
+// ── FPY Table ─────────────────────────────────
+function renderFPYTable(){
+  if(!WEEKS.length){
+    document.getElementById('fpy-table-body').innerHTML='<div class="empty-state"><div class="icon">📊</div><p>Sin datos</p></div>';
+    return;
+  }
+
+  const headers=WEEKS.map(w=>`<th>Sem ${w.w}<br><small>${w.y}</small></th>`).join('');
+  const rowsData=['z7','ut','gl'].map(key=>{
+    const labels={'z7':'Fábrica Zona 7','ut':'Fábrica Utatlan','gl':'Global'};
+    const tds=WEEKS.map(wk=>{
+      const v=wk[key].tot>0?wk[key].bue/wk[key].tot:null;
+      return `<td>${v!==null?badgeFPY(v):'—'}</td>`;
+    }).join('');
+    return `<tr><td>${labels[key]}</td>${tds}</tr>`;
+  });
+
+  // totals row
+  const totTds=WEEKS.map(wk=>{
+    const v=wk.gl.tot>0?wk.gl.bue/wk.gl.tot:null;
+    return `<td>${v!==null?badgeFPY(v):'—'}</td>`;
+  }).join('');
+
+  document.getElementById('fpy-table-body').innerHTML=`
+    <div class="fpy-table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Planta</th>${headers}</tr></thead>
+        <tbody>
+          ${rowsData.join('')}
+          <tr><td>Total período</td>${totTds}</tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Centros ───────────────────────────────────
+function renderCentros(){
+  // Exclude intermediate centers
+  const data = FILTERED.filter(r=>!EXCL_CENTROS.includes(r.centro));
+  if(!data.length){
+    document.getElementById('centros-body').innerHTML='<div class="empty-state"><div class="icon">🏭</div><p>Sin datos</p></div>';
+    return;
+  }
+
+  const byCentro={};
+  data.forEach(r=>{
+    const k=r.centro+'||'+r.org;
+    if(!byCentro[k]) byCentro[k]={centro:r.centro,org:r.org,plan:0,prod:0,bue:0,mal:0};
+    const e=byCentro[k];
+    e.plan+=r.cantPlan;e.prod+=r.totProd;e.bue+=r.uBuenas;e.mal+=r.uMalas;
+  });
+
+  const entries=Object.values(byCentro).sort((a,b)=>{
+    const ra=a.prod/a.plan, rb=b.prod/b.plan;
+    return rb-ra;
+  });
+
+  const maxRend=Math.max(...entries.map(e=>e.prod/e.plan*100));
+  const maxMerma=Math.max(...entries.map(e=>e.bue>0?e.mal/e.bue*100:0));
+
+  const cards=entries.map(e=>{
+    const rend=e.prod/e.plan*100;
+    const merma=e.bue>0?e.mal/e.bue*100:0;
+    const rendW=Math.min(rend/maxRend*100,100);
+    const mermaW=maxMerma>0?Math.min(merma/maxMerma*100,100):0;
+    const orgShort=e.org==='FABRICA ZONA 7'?'Zona 7':'Utatlan';
+    return `<div class="centro-card">
+      <div class="centro-card-head">
+        <div class="centro-name" title="${e.centro}">${e.centro}</div>
+        <div class="centro-org">${orgShort}</div>
+      </div>
+      <div class="centro-metrics">
+        <div class="metric-row">
+          <div class="metric-name">Rendim.</div>
+          <div class="metric-bar"><div class="metric-bar-fill rend-fill" style="width:${rendW}%"></div></div>
+          <div class="metric-val" style="color:${rend>=100?'var(--green)':rend>=95?'var(--gold)':'var(--red)'}">${rend.toFixed(1)}%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">Merma</div>
+          <div class="metric-bar"><div class="metric-bar-fill merma-fill" style="width:${mermaW}%"></div></div>
+          <div class="metric-val" style="color:${merma<2?'var(--green)':merma<5?'var(--gold)':'var(--red)'}">${merma.toFixed(2)}%</div>
+        </div>
+        <div style="font-size:.68rem;color:var(--ink-lt);margin-top:4px">
+          Plan: ${fmtN(e.plan)} u · Producido: ${fmtN(e.prod)} u · Malas: ${fmtN(e.mal)} u
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('centros-body').innerHTML=`<div class="centro-grid">${cards}</div>`;
+}
+
+// ── Top 5 ─────────────────────────────────────
+function renderTop5(){
+  const data=FILTERED.filter(r=>!EXCL_CENTROS.includes(r.centro));
+  if(!data.length){
+    document.getElementById('top5-body').innerHTML='<div class="empty-state"><div class="icon">🥐</div><p>Sin datos</p></div>';
+    return;
+  }
+
+  // Group by product
+  const byProd={};
+  data.forEach(r=>{
+    if(!byProd[r.prod]) byProd[r.prod]={prod:r.prod,plan:0,prod_u:0,bue:0,mal:0,ords:0};
+    const e=byProd[r.prod];
+    e.plan+=r.cantPlan;e.prod_u+=r.totProd;e.bue+=r.uBuenas;e.mal+=r.uMalas;e.ords++;
+  });
+
+  const arr=Object.values(byProd).filter(e=>e.plan>0&&e.prod_u>0);
+
+  const top5rend=[...arr].sort((a,b)=>b.prod_u/b.plan-a.prod_u/a.plan).slice(0,5);
+  const top5merma=[...arr].filter(e=>e.bue>0).sort((a,b)=>b.mal/b.bue-a.mal/a.bue).slice(0,5);
+
+  const makeTable=(rows,type)=>{
+    const isRend=type==='rend';
+    const trs=rows.map((e,i)=>{
+      const rend=(e.prod_u/e.plan*100).toFixed(1);
+      const merma=e.bue>0?(e.mal/e.bue*100).toFixed(2):'0.00';
+      const main=isRend?`<span style="font-weight:600;color:var(--green)">${rend}%</span>`
+                       :`<span style="font-weight:600;color:var(--red)">${merma}%</span>`;
+      return `<tr>
+        <td>${i+1}</td>
+        <td style="text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.prod}">${e.prod}</td>
+        <td>${e.ords}</td>
+        <td>${main}</td>
+        <td>${isRend?merma+'%':rend+'%'}</td>
+      </tr>`;
+    }).join('');
+
+    const h1=isRend?'Rend. %':'Merma %';
+    const h2=isRend?'Merma %':'Rend. %';
+
+    return `<table class="data-table" style="font-size:.8rem">
+      <thead><tr><th>#</th><th style="text-align:left">Producto</th><th>Órdenes</th><th>${h1}</th><th>${h2}</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+  };
+
+  document.getElementById('top5-body').innerHTML=`
+    <div class="tops-row">
+      <div class="top-section">
+        <h3>🟢 Mejores rendimientos</h3>
+        ${makeTable(top5rend,'rend')}
+      </div>
+      <div class="top-section">
+        <h3>🔴 Mayores mermas</h3>
+        ${makeTable(top5merma,'merma')}
+      </div>
+    </div>`;
+}
+
+// ── Drag & Drop ───────────────────────────────
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(f){const dt=new DataTransfer();dt.items.add(f);
+    document.getElementById('fileInput').files=dt.files;
+    loadFile({target:{files:dt.files}});}
+});
+
+// ── Auto-load weekly file ─────────────────────
+(function autoLoad(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=String(now.getMonth()+1).padStart(2,'0');
+  const d=String(now.getDate()).padStart(2,'0');
+  const today=`${y}-${m}-${d}`;
+  fetch(`data/weekly/Analisis_produccion_${today}.xlsx?v=${Date.now()}`)
+    .then(r=>r.ok?r.arrayBuffer():null)
+    .then(buf=>{
+      if(!buf) return;
+      const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+      parseHoja1(wb);
+      toast('✅ Datos de la semana cargados automáticamente','ok');
+    }).catch(()=>{});
+})();
+</script>
+</body>
+</html>
