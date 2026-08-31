@@ -3,977 +3,597 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Análisis FPY Semanal · Isopan Zona 7</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<title>FPY Semanal · Isopan Zona 7</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root {
-  --brown:    #7B3A10;
-  --brown-dk: #4E2409;
-  --gold:     #C8920A;
-  --gold-lt:  #E8B84B;
-  --cream:    #FBF6EE;
-  --cream-dk: #F0E6D3;
-  --white:    #FFFFFF;
-  --ink:      #1A0E05;
-  --ink-mid:  #5C3C20;
-  --ink-lt:   #9C7A58;
-  --green:    #2D6A4F;
-  --red:      #B23A2E;
-  --blue:     #1A4F78;
-  --rad:      8px;
-  --rad-lg:   14px;
-}
-
+:root{--br:#7B3A10;--bd:#4E2409;--go:#C8920A;--gl:#E8B84B;--cr:#FBF6EE;--cd:#F0E6D3;--wh:#fff;--ink:#1A0E05;--il:#9C7A58;--gn:#2D6A4F;--rd:#B23A2E;--bl:#1A4F78}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--cream);
-  color:var(--ink);
-  min-height:100vh;
-}
-
-/* ── HEADER ──────────────────────────────── */
-.site-header{
-  background:var(--brown-dk);
-  padding:0 32px;
-  display:flex;align-items:center;justify-content:space-between;
-  height:56px;
-  position:sticky;top:0;z-index:100;
-  border-bottom:3px solid var(--gold);
-}
-.header-brand{
-  font-family:'Syne',sans-serif;
-  font-size:.85rem;font-weight:700;letter-spacing:.12em;
-  color:var(--gold-lt);text-transform:uppercase;
-}
-.header-brand span{color:rgba(255,255,255,.45);font-weight:400}
-.header-right{display:flex;align-items:center;gap:12px}
-.upload-pill{
-  display:flex;align-items:center;gap:7px;
-  background:var(--gold);color:#fff;
-  border:none;border-radius:20px;
-  padding:6px 14px;
-  font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;
-  cursor:pointer;transition:background .18s;
-}
-.upload-pill:hover{background:var(--brown)}
-.upload-pill svg{width:14px;height:14px;flex-shrink:0}
-#fileInput{display:none}
-
-/* ── HERO / KPI STRIP ────────────────────── */
-.hero{
-  background:linear-gradient(135deg,var(--brown-dk) 0%,var(--brown) 55%,#A0522D 100%);
-  padding:36px 40px 30px;
-  color:#fff;
-}
-.hero-eyebrow{
-  font-family:'DM Mono',monospace;
-  font-size:.7rem;letter-spacing:.2em;
-  color:var(--gold-lt);text-transform:uppercase;margin-bottom:10px;
-}
-.hero-title{
-  font-family:'Syne',sans-serif;
-  font-size:2rem;font-weight:800;line-height:1.1;
-  margin-bottom:6px;
-}
-.hero-sub{font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:28px}
-
-.kpi-row{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:14px;
-}
-.kpi-card{
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.14);
-  border-radius:var(--rad-lg);
-  padding:16px 18px;
-  transition:background .15s;
-}
-.kpi-card:hover{background:rgba(255,255,255,.13)}
-.kpi-label{
-  font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
-  color:rgba(255,255,255,.5);margin-bottom:6px;
-}
-.kpi-value{
-  font-family:'Syne',sans-serif;
-  font-size:1.75rem;font-weight:800;color:#fff;line-height:1;
-}
-.kpi-value.good{color:#7FEBA2}
-.kpi-value.warn{color:var(--gold-lt)}
-.kpi-value.bad {color:#F4877B}
-.kpi-sub{font-size:.73rem;color:rgba(255,255,255,.4);margin-top:5px}
-
-/* ── MAIN LAYOUT ─────────────────────────── */
-.main-wrap{
-  max-width:1360px;margin:0 auto;padding:32px 32px 60px;
-  display:flex;flex-direction:column;gap:28px;
-}
-
-/* ── SECTION CARD ────────────────────────── */
-.panel{
-  background:var(--white);
-  border-radius:var(--rad-lg);
-  box-shadow:0 2px 12px rgba(123,58,16,.08);
-  overflow:hidden;
-}
-.panel-head{
-  background:var(--brown);
-  padding:14px 22px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:10px;
-}
-.panel-head h2{
-  font-family:'Syne',sans-serif;
-  font-size:.95rem;font-weight:700;color:#fff;letter-spacing:.05em;
-}
-.panel-body{padding:22px}
-
-/* ── CONTROLS ROW ─────────────────────────── */
-.controls-row{
-  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
-  background:var(--cream);
-  border-radius:var(--rad);
-  padding:16px 20px;
-  margin-bottom:22px;
-  border:1px solid var(--cream-dk);
-}
-.ctrl-group{display:flex;flex-direction:column;gap:5px}
-.ctrl-group label{
-  font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-lt);font-weight:500;
-}
-.ctrl-group select,
-.ctrl-group input[type="date"]{
-  border:1.5px solid var(--cream-dk);
-  border-radius:var(--rad);
-  padding:7px 12px;
-  font-family:'DM Sans',sans-serif;font-size:.85rem;
-  background:#fff;color:var(--ink);
-  outline:none;cursor:pointer;
-  transition:border-color .18s;
-  min-width:160px;
-}
-.ctrl-group select:focus,
-.ctrl-group input:focus{border-color:var(--gold)}
-.ctrl-btn{
-  background:var(--brown);color:#fff;
-  border:none;border-radius:var(--rad);
-  padding:8px 18px;
-  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;
-  cursor:pointer;align-self:flex-end;
-  transition:background .18s,transform .12s;
-}
-.ctrl-btn:hover{background:var(--gold);transform:translateY(-1px)}
-
-/* ── FPY CHART ───────────────────────────── */
-.fpy-chart-wrap{
-  overflow-x:auto;padding-bottom:4px;
-}
-.fpy-chart{
-  display:flex;flex-direction:column;gap:10px;
-  min-width:600px;
-}
-.week-row{display:flex;align-items:center;gap:12px}
-.week-label{
-  font-family:'DM Mono',monospace;
-  font-size:.72rem;color:var(--ink-lt);
-  width:80px;flex-shrink:0;text-align:right;
-}
-.bars-group{flex:1;display:flex;flex-direction:column;gap:4px}
-.bar-line{display:flex;align-items:center;gap:8px}
-.bar-plant{
-  font-size:.68rem;color:var(--ink-lt);
-  width:100px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.bar-track{
-  flex:1;height:18px;
-  background:var(--cream-dk);
-  border-radius:4px;overflow:hidden;
-  position:relative;
-}
-.bar-fill{
-  height:100%;border-radius:4px;
-  transition:width .5s ease;
-  display:flex;align-items:center;justify-content:flex-end;
-  padding-right:6px;
-}
-.bar-fill span{
-  font-family:'DM Mono',monospace;
-  font-size:.66rem;font-weight:500;color:#fff;
-  white-space:nowrap;
-}
-.bar-pct{
-  font-family:'DM Mono',monospace;
-  font-size:.72rem;font-weight:500;color:var(--ink);
-  width:52px;flex-shrink:0;
-}
-.bar-zona7  .bar-fill{background:linear-gradient(90deg,var(--brown),var(--gold))}
-.bar-utatlan .bar-fill{background:linear-gradient(90deg,var(--blue),#2980B9)}
-.bar-global  .bar-fill{background:linear-gradient(90deg,var(--green),#52B788)}
-
-/* reference line at 97% */
-.bar-track::after{
-  content:'';
-  position:absolute;top:0;bottom:0;
-  width:1.5px;background:rgba(180,0,0,.35);
-  left:var(--ref-pos);
-}
-
-/* ── FPY TABLE ────────────────────────────── */
-.fpy-table-wrap{overflow-x:auto;margin-top:20px}
-.data-table{
-  width:100%;border-collapse:collapse;font-size:.83rem;
-}
-.data-table thead tr{background:var(--brown);color:#fff}
-.data-table thead th{
-  padding:10px 14px;text-align:center;
-  font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
-  font-weight:600;white-space:nowrap;
-}
-.data-table thead th:first-child{text-align:left}
-.data-table tbody tr{border-bottom:1px solid var(--cream-dk);transition:background .1s}
-.data-table tbody tr:hover{background:var(--cream)}
-.data-table tbody tr:last-child{border-bottom:none;background:var(--cream-dk);font-weight:600}
-.data-table tbody td{padding:9px 14px;text-align:center;white-space:nowrap}
-.data-table tbody td:first-child{text-align:left;font-weight:500}
-.fpy-badge{
-  display:inline-block;
-  padding:2px 8px;border-radius:20px;
-  font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;
-}
-.fpy-hi  {background:#D5F5E3;color:#1B6B3A}
-.fpy-mid {background:#FFF3CD;color:#856404}
-.fpy-lo  {background:#FADBD8;color:#922B21}
-
-/* ── CENTRO CHART ─────────────────────────── */
-.centro-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:14px;
-}
-.centro-card{
-  background:var(--cream);
-  border:1px solid var(--cream-dk);
-  border-radius:var(--rad);
-  padding:14px 16px;
-}
-.centro-card-head{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:10px;
-}
-.centro-name{
-  font-size:.82rem;font-weight:600;color:var(--brown-dk);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;
-}
-.centro-org{
-  font-size:.65rem;color:var(--ink-lt);
-  background:var(--cream-dk);
-  padding:2px 7px;border-radius:10px;
-  flex-shrink:0;
-}
-.centro-metrics{display:flex;flex-direction:column;gap:7px}
-.metric-row{display:flex;align-items:center;gap:8px}
-.metric-name{font-size:.68rem;color:var(--ink-lt);width:80px;flex-shrink:0}
-.metric-bar{flex:1;height:10px;background:var(--cream-dk);border-radius:4px;overflow:hidden}
-.metric-bar-fill{height:100%;border-radius:4px}
-.rend-fill{background:linear-gradient(90deg,var(--brown),var(--gold))}
-.merma-fill{background:linear-gradient(90deg,var(--red),#E67E22)}
-.metric-val{font-family:'DM Mono',monospace;font-size:.72rem;width:52px;text-align:right;font-weight:500}
-
-/* ── TOP 5 TABLES ─────────────────────────── */
-.tops-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:800px){.tops-row{grid-template-columns:1fr}}
-.top-section h3{
-  font-family:'Syne',sans-serif;
-  font-size:.85rem;font-weight:700;
-  color:var(--brown);margin-bottom:10px;
-  display:flex;align-items:center;gap:6px;
-}
-
-/* ── EMPTY / UPLOAD HINT ──────────────────── */
-.empty-state{
-  text-align:center;padding:50px 20px;
-  color:var(--ink-lt);
-}
-.empty-state .icon{font-size:2.8rem;margin-bottom:12px}
-.empty-state p{font-size:.9rem}
-.drop-zone{
-  border:2px dashed var(--cream-dk);
-  border-radius:var(--rad-lg);
-  padding:40px;text-align:center;
-  cursor:pointer;
-  transition:border-color .18s,background .18s;
-  background:var(--cream);color:var(--ink-lt);
-  font-size:.87rem;
-}
-.drop-zone:hover,.drop-zone.over{border-color:var(--gold);background:#FFF8EA}
-.drop-zone p{margin-top:10px}
-.drop-zone small{font-size:.76rem;opacity:.65}
-
-/* ── TOAST ────────────────────────────────── */
-.toast{
-  position:fixed;bottom:22px;right:22px;
-  background:var(--brown-dk);color:#fff;
-  padding:11px 18px;border-radius:var(--rad);
-  font-size:.83rem;z-index:999;
-  opacity:0;transform:translateY(8px);
-  transition:all .25s;pointer-events:none;
-}
+body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--ink);min-height:100vh}
+.hdr{background:var(--bd);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:99;border-bottom:3px solid var(--go)}
+.brand{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.12em;color:var(--gl);text-transform:uppercase}
+.brand span{color:rgba(255,255,255,.4);font-weight:400}
+.upbtn{display:flex;align-items:center;gap:7px;background:var(--go);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s}
+.upbtn:hover{background:var(--br)}
+#fi{display:none}
+.hero{background:linear-gradient(135deg,var(--bd),var(--br) 55%,#A0522D);padding:32px 36px 26px;color:#fff}
+.eyebrow{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.2em;color:var(--gl);text-transform:uppercase;margin-bottom:8px}
+.hero h1{font-family:'Syne',sans-serif;font-size:1.85rem;font-weight:800;line-height:1.1;margin-bottom:5px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.55);margin-bottom:24px}
+.krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.kc{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 16px}
+.kl{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.48);margin-bottom:5px}
+.kv{font-family:'Syne',sans-serif;font-size:1.65rem;font-weight:800;color:#fff;line-height:1}
+.kv.ok{color:#7FEBA2}.kv.wn{color:var(--gl)}.kv.bd{color:#F4877B}
+.ks{font-size:.7rem;color:rgba(255,255,255,.37);margin-top:4px}
+.wrap{max-width:1340px;margin:0 auto;padding:26px 28px 60px;display:flex;flex-direction:column;gap:22px}
+.panel{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(123,58,16,.08);overflow:hidden}
+.ph{background:var(--br);padding:13px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ph h2{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700;color:#fff;letter-spacing:.04em}
+.ph small{font-size:.72rem;color:rgba(255,255,255,.55)}
+.pb{padding:20px}
+.ctrl{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;background:var(--cr);border:1px solid var(--cd);border-radius:8px;padding:14px 18px;margin-bottom:18px}
+.cg{display:flex;flex-direction:column;gap:4px}
+.cg label{font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;color:var(--il);font-weight:500}
+.cg select,.cg input[type=date]{border:1.5px solid var(--cd);border-radius:7px;padding:7px 11px;font-family:'DM Sans',sans-serif;font-size:.84rem;background:#fff;color:var(--ink);outline:none;min-width:155px;transition:border-color .18s}
+.cg select:focus,.cg input:focus{border-color:var(--go)}
+.cb{background:var(--br);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;align-self:flex-end;transition:background .18s}
+.cb:hover{background:var(--go)}
+.cb.sec{background:transparent;color:var(--il);border:1px solid var(--cd)}
+.cb.sec:hover{background:var(--cd);color:var(--ink)}
+.scrollx{overflow-x:auto;padding-bottom:2px}
+.fpy-chart{display:flex;flex-direction:column;gap:9px;min-width:540px}
+.wrow{display:flex;align-items:flex-start;gap:10px}
+.wlbl{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--il);width:76px;flex-shrink:0;text-align:right;padding-top:2px}
+.bgrp{flex:1;display:flex;flex-direction:column;gap:3px}
+.bline{display:flex;align-items:center;gap:7px}
+.bplt{font-size:.67rem;color:var(--il);width:96px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btrk{flex:1;height:17px;background:var(--cd);border-radius:4px;overflow:hidden;position:relative}
+.btrk::after{content:'';position:absolute;top:0;bottom:0;width:1.5px;background:rgba(180,0,0,.4);left:97%}
+.bfil{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;transition:width .45s}
+.bfil span{font-family:'DM Mono',monospace;font-size:.64rem;font-weight:500;color:#fff;white-space:nowrap}
+.bpct{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;color:var(--ink);width:50px;flex-shrink:0}
+.gl-bar .bfil{background:linear-gradient(90deg,var(--gn),#52B788)}
+.z7-bar .bfil{background:linear-gradient(90deg,var(--br),var(--go))}
+.ut-bar .bfil{background:linear-gradient(90deg,var(--bl),#2980B9)}
+.dtbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.dtbl thead tr{background:var(--br);color:#fff}
+.dtbl thead th{padding:9px 13px;text-align:center;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;white-space:nowrap}
+.dtbl thead th:first-child{text-align:left}
+.dtbl tbody tr{border-bottom:1px solid var(--cd);transition:background .1s}
+.dtbl tbody tr:hover{background:var(--cr)}
+.dtbl tbody tr:last-child{border:none;background:var(--cd);font-weight:600}
+.dtbl tbody td{padding:8px 13px;text-align:center;white-space:nowrap}
+.dtbl tbody td:first-child{text-align:left;font-weight:500}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;font-size:.76rem;font-weight:500}
+.bhi{background:#D5F5E3;color:#1B6B3A}.bmd{background:#FFF3CD;color:#856404}.blo{background:#FADBD8;color:#922B21}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.ccard{background:var(--cr);border:1px solid var(--cd);border-radius:8px;padding:13px 15px}
+.cch{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.cnm{font-size:.8rem;font-weight:600;color:var(--bd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:155px}
+.corp{font-size:.63rem;color:var(--il);background:var(--cd);padding:2px 7px;border-radius:10px;flex-shrink:0}
+.mrow2{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.mn{font-size:.66rem;color:var(--il);width:76px;flex-shrink:0}
+.mbar{flex:1;height:9px;background:var(--cd);border-radius:4px;overflow:hidden}
+.mfil{height:100%;border-radius:4px}
+.rf{background:linear-gradient(90deg,var(--br),var(--go))}.mf{background:linear-gradient(90deg,var(--rd),#E67E22)}
+.mv{font-family:'DM Mono',monospace;font-size:.7rem;width:50px;text-align:right;font-weight:500}
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:780px){.trow{grid-template-columns:1fr}}
+.ts h3{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--br);margin-bottom:9px}
+.em{text-align:center;padding:44px 20px;color:var(--il)}
+.em .ei{font-size:2.6rem;margin-bottom:10px}
+.em p{font-size:.88rem}
+.dz{border:2px dashed var(--cd);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .18s,background .18s;background:var(--cr);color:var(--il);font-size:.85rem}
+.dz:hover,.dz.over{border-color:var(--go);background:#FFF8EA}
+.lg{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.li{display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--il)}
+.ld{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.info-box{background:var(--cr);border:1px solid var(--cd);border-radius:8px;padding:12px 16px;font-size:.8rem;color:var(--il);margin-bottom:14px}
+.info-box strong{color:var(--br)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bd);color:#fff;padding:10px 16px;border-radius:7px;font-size:.82rem;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:360px}
 .toast.show{opacity:1;transform:translateY(0)}
-.toast.ok{background:var(--green)}
-.toast.err{background:var(--red)}
-
-/* ── LEGEND ───────────────────────────────── */
-.legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--ink-lt)}
-.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-
-@media(max-width:640px){
-  .hero{padding:24px 20px 22px}
-  .hero-title{font-size:1.45rem}
-  .main-wrap{padding:18px 16px 40px}
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
-  .tops-row{grid-template-columns:1fr}
-}
+.toast.ok{background:var(--gn)}.toast.er{background:var(--rd)}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="site-header">
-  <div class="header-brand">
-    🥖 Isopan <span>/ Análisis FPY Semanal</span>
-  </div>
-  <div class="header-right">
-    <button class="upload-pill" onclick="document.getElementById('fileInput').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
+<header class="hdr">
+  <div class="brand">🥖 Isopan <span>/ FPY Semanal</span></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="upbtn" onclick="document.getElementById('fi').click()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Cargar Excel
     </button>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadFile(event)"/>
+    <input type="file" id="fi" accept=".xlsx,.xls" onchange="loadFile(event)"/>
   </div>
 </header>
 
-<!-- HERO -->
-<section class="hero" id="hero">
-  <div class="hero-eyebrow">Fábrica Zona 7 · Panadería Isopan</div>
-  <h1 class="hero-title">Análisis de Producción<br>& Índice FPY Semanal</h1>
-  <p class="hero-sub" id="hero-sub">Carga el archivo Excel para ver los indicadores</p>
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">FPY Global</div>
-      <div class="kpi-value" id="kpi-fpy-global">—</div>
-      <div class="kpi-sub">promedio ponderado</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">FPY Zona 7</div>
-      <div class="kpi-value" id="kpi-fpy-z7">—</div>
-      <div class="kpi-sub">ponderado</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">FPY Utatlan</div>
-      <div class="kpi-value" id="kpi-fpy-ut">—</div>
-      <div class="kpi-sub">ponderado</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Rend. Ponderado</div>
-      <div class="kpi-value" id="kpi-rend">—</div>
-      <div class="kpi-sub">producido / planificado</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Merma Global</div>
-      <div class="kpi-value" id="kpi-merma">—</div>
-      <div class="kpi-sub">unidades malas / buenas</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Órdenes</div>
-      <div class="kpi-value" id="kpi-ordenes">—</div>
-      <div class="kpi-sub">en el período</div>
-    </div>
+<section class="hero">
+  <div class="eyebrow">Fábrica Zona 7 · Panadería Isopan</div>
+  <h1>Análisis de Producción<br>& Índice FPY Semanal</h1>
+  <p class="hero-sub" id="hsub">Carga el archivo Excel para ver los indicadores</p>
+  <div class="krow">
+    <div class="kc"><div class="kl">FPY Global</div><div class="kv" id="kfg">—</div><div class="ks">buenas / total producido</div></div>
+    <div class="kc"><div class="kl">FPY Zona 7</div><div class="kv" id="kfz">—</div><div class="ks">ponderado</div></div>
+    <div class="kc"><div class="kl">FPY Utatlan</div><div class="kv" id="kfu">—</div><div class="ks">ponderado</div></div>
+    <div class="kc"><div class="kl">Rendimiento</div><div class="kv" id="krn">—</div><div class="ks">producido / planificado</div></div>
+    <div class="kc"><div class="kl">Merma global</div><div class="kv" id="kmr">—</div><div class="ks">malas / buenas</div></div>
+    <div class="kc"><div class="kl">Órdenes</div><div class="kv" id="kor">—</div><div class="ks">en el período</div></div>
   </div>
 </section>
 
-<!-- MAIN CONTENT -->
-<div class="main-wrap">
+<div class="wrap">
 
-  <!-- CONTROLES DE FECHA -->
+  <!-- FILTROS -->
   <div class="panel">
-    <div class="panel-head">
+    <div class="ph">
       <h2>📅 Filtro de período</h2>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#7B3A10,#C8920A)"></div>Zona 7</div>
-        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#1A4F78,#2980B9)"></div>Utatlan</div>
-        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#2D6A4F,#52B788)"></div>Global</div>
+      <div class="lg">
+        <div class="li"><div class="ld" style="background:linear-gradient(90deg,#7B3A10,#C8920A)"></div>Zona 7</div>
+        <div class="li"><div class="ld" style="background:linear-gradient(90deg,#1A4F78,#2980B9)"></div>Utatlan</div>
+        <div class="li"><div class="ld" style="background:linear-gradient(90deg,#2D6A4F,#52B788)"></div>Global</div>
       </div>
     </div>
-    <div class="panel-body">
-      <div class="controls-row">
-        <div class="ctrl-group">
-          <label>Desde</label>
-          <input type="date" id="from-date"/>
-        </div>
-        <div class="ctrl-group">
-          <label>Hasta</label>
-          <input type="date" id="to-date"/>
-        </div>
-        <div class="ctrl-group">
-          <label>Planta</label>
-          <select id="planta-sel">
+    <div class="pb">
+      <div class="ctrl">
+        <div class="cg"><label>Desde</label><input type="date" id="fd"/></div>
+        <div class="cg"><label>Hasta</label><input type="date" id="td"/></div>
+        <div class="cg"><label>Planta</label>
+          <select id="ps">
             <option value="all">Todas las plantas</option>
-            <option value="FABRICA ZONA 7">Fábrica Zona 7</option>
-            <option value="FABRICA UTATLAN">Fábrica Utatlan</option>
+            <option value="ZONA7">Fábrica Zona 7</option>
+            <option value="UTATLAN">Fábrica Utatlan</option>
           </select>
         </div>
-        <div class="ctrl-group">
-          <label>Centro</label>
-          <select id="centro-sel">
-            <option value="all">Todos los centros</option>
-          </select>
+        <div class="cg"><label>Centro</label>
+          <select id="cs"><option value="all">Todos los centros</option></select>
         </div>
-        <button class="ctrl-btn" onclick="applyFilters()">Aplicar ▶</button>
-        <button class="ctrl-btn" style="background:transparent;color:var(--ink-lt);border:1px solid var(--cream-dk)" onclick="resetFilters()">Restablecer</button>
+        <button class="cb" onclick="applyFilters()">Aplicar ▶</button>
+        <button class="cb sec" onclick="resetFilters()">Restablecer</button>
       </div>
     </div>
   </div>
 
-  <!-- FPY SEMANAL -->
+  <!-- FPY CHART -->
   <div class="panel">
-    <div class="panel-head">
-      <h2>📈 FPY Semanal (First Pass Yield)</h2>
-      <span style="font-size:.75rem;color:rgba(255,255,255,.6)">FPY = Unidades buenas / Total producido</span>
-    </div>
-    <div class="panel-body" id="fpy-body">
-      <div class="empty-state">
-        <div class="icon">🍞</div>
-        <p>Carga un archivo Excel para ver el FPY semanal</p>
-      </div>
+    <div class="ph"><h2>📈 FPY Semanal (First Pass Yield)</h2><small>Línea roja = objetivo 97%</small></div>
+    <div class="pb" id="fpy-body">
+      <div class="em"><div class="ei">🍞</div><p>Carga un Excel para ver el FPY semanal</p></div>
     </div>
   </div>
 
-  <!-- FPY TABLE -->
+  <!-- TABLA FPY -->
   <div class="panel">
-    <div class="panel-head"><h2>🗂 Tabla FPY por semana y planta</h2></div>
-    <div class="panel-body" id="fpy-table-body">
-      <div class="empty-state"><div class="icon">📊</div><p>Sin datos</p></div>
+    <div class="ph"><h2>🗂 Tabla FPY por semana y planta</h2></div>
+    <div class="pb" id="tbl-body">
+      <div class="em"><div class="ei">📊</div><p>Sin datos</p></div>
     </div>
   </div>
 
   <!-- CENTROS -->
   <div class="panel">
-    <div class="panel-head"><h2>🏭 Rendimiento y Merma por Centro</h2></div>
-    <div class="panel-body" id="centros-body">
-      <div class="empty-state"><div class="icon">🏭</div><p>Sin datos</p></div>
+    <div class="ph"><h2>🏭 Rendimiento y Merma por Centro</h2></div>
+    <div class="pb" id="ctr-body">
+      <div class="em"><div class="ei">🏭</div><p>Sin datos</p></div>
     </div>
   </div>
 
   <!-- TOP 5 -->
   <div class="panel">
-    <div class="panel-head"><h2>🏆 Top 5 Productos</h2></div>
-    <div class="panel-body" id="top5-body">
-      <div class="empty-state"><div class="icon">🥐</div><p>Sin datos</p></div>
+    <div class="ph"><h2>🏆 Top 5 Productos</h2></div>
+    <div class="pb" id="top-body">
+      <div class="em"><div class="ei">🥐</div><p>Sin datos</p></div>
     </div>
   </div>
 
-  <!-- UPLOAD AREA -->
+  <!-- SUBIR ARCHIVO -->
   <div class="panel">
-    <div class="panel-head"><h2>⬆ Cargar archivo</h2></div>
-    <div class="panel-body">
-      <div class="drop-zone" id="dz" onclick="document.getElementById('fileInput').click()">
-        <div style="font-size:2rem">📂</div>
-        <p><strong>Arrastra el Excel aquí</strong> o haz clic para seleccionar</p>
-        <small>Archivo semanal con hoja "hoja1" · Columnas: no_documento, fecha_plan, fecha_fin, codigo_producido, producido, centro, cant_plan, total_producido, u_buenas, u_malas, rendimiento_%, merma_%, estado, organizacion</small>
+    <div class="ph"><h2>⬆ Cargar archivo Excel</h2></div>
+    <div class="pb">
+      <div class="info-box">
+        <strong>Formatos compatibles:</strong> El tablero detecta automáticamente la estructura del archivo.<br>
+        Funciona con columnas que empiecen con <code>fecha_plan</code> o <code>no_documento</code>, y con cualquier nombre de hoja.<br>
+        <strong>Nombre para carga automática:</strong> <code>Analisis_produccion_YYYY-MM-DD.xlsx</code> en carpeta <code>data/weekly/</code>
       </div>
-      <div style="margin-top:16px;background:var(--cream);border-radius:var(--rad);padding:16px;font-size:.82rem;color:var(--ink-lt);">
-        <strong style="color:var(--brown)">📋 Nombre de archivo sugerido para GitHub:</strong><br>
-        <code style="background:#fff;padding:3px 8px;border-radius:4px;border:1px solid var(--cream-dk);display:inline-block;margin-top:6px">Analisis_produccion_YYYY-MM-DD.xlsx</code><br>
-        <span style="margin-top:8px;display:block">El tablero carga automáticamente el archivo de la semana en curso desde <code>data/weekly/</code></span>
+      <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
+        <div style="font-size:2rem">📂</div>
+        <p style="margin-top:10px"><strong>Arrastra el Excel aquí</strong> o haz clic para seleccionar</p>
+        <small>Compatible con cualquier estructura del reporte de producción Isopan</small>
       </div>
     </div>
   </div>
 
-</div><!-- /main-wrap -->
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Helpers ───────────────────────────────────
-const EXCL_CENTROS = ['CENTRO INTERMEDIO ZONA 7','CENTRO INTERMEDIO UTATLAN','REEMPAQUE'];
-const EXCEL_EPOCH  = 25569; // days between 1899-12-30 and 1970-01-01
+// ── Constantes ────────────────────────────────────────────────
+const EXCL = ['CENTRO INTERMEDIO ZONA 7','CENTRO INTERMEDIO UTATLAN','REEMPAQUE'];
 
-function excelToDate(n){
-  const d = new Date((n - EXCEL_EPOCH)*86400*1000);
-  return d;
-}
-function dateToStr(d){
-  return d.toISOString().split('T')[0];
-}
-function excelToStr(n){
-  if(!n || isNaN(n)) return '';
-  return dateToStr(excelToDate(n));
-}
-function pct(v,decimals=2){
-  return (v*100).toFixed(decimals)+'%';
-}
+// ── Estado ────────────────────────────────────────────────────
+let RAW = [], FILTERED = [], WEEKS = [];
+
+// ── Utilidades ────────────────────────────────────────────────
+function toNum(v){ const n=Number(v); return isNaN(n)?0:n; }
+function fmtP(v,d=2){ return (v*100).toFixed(d)+'%'; }
+function fmtN(n){ return Math.round(n).toLocaleString('es-GT'); }
+function colorCls(v){ return v>=0.98?'ok':v>=0.95?'wn':'bd'; }
+
 function toast(msg,type=''){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast show '+type;
-  setTimeout(()=>t.className='toast',3200);
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',4000);
 }
-function fmtN(n){return n.toLocaleString('es-GT')}
 
-// ── State ─────────────────────────────────────
-let RAW = [];   // parsed rows from hoja1 (ZONA 7 only or both)
-let FILTERED = [];
-let WEEKS = [];
+// Convierte cualquier representación de fecha a 'YYYY-MM-DD'
+function toDateStr(val){
+  if(!val && val!==0) return '';
+  if(val instanceof Date){
+    if(isNaN(val.getTime())) return '';
+    const y=val.getFullYear(),m=String(val.getMonth()+1).padStart(2,'0'),d=String(val.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  const n=Number(val);
+  if(!isNaN(n) && n>40000 && n<60000){
+    const ms=Math.round((n-25569)*86400*1000);
+    const dt=new Date(ms);
+    const y=dt.getUTCFullYear(),m=String(dt.getUTCMonth()+1).padStart(2,'0'),d=String(dt.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  if(typeof val==='string'){
+    const m=val.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  }
+  return '';
+}
 
-// ── ISO week helper ────────────────────────────
-function isoWeek(d){
-  const dt = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+// ── ISO week ──────────────────────────────────────────────────
+function isoWeek(dateStr){
+  if(!dateStr) return null;
+  const [y,mo,d]=dateStr.split('-').map(Number);
+  const dt=new Date(Date.UTC(y,mo-1,d));
   dt.setUTCDate(dt.getUTCDate()+4-(dt.getUTCDay()||7));
-  const y = dt.getUTCFullYear();
-  const w = Math.ceil((((dt-new Date(Date.UTC(y,0,1)))/86400000)+1)/7);
-  return {y,w,key:`${y}-S${String(w).padStart(2,'0')}`};
+  const yr=dt.getUTCFullYear();
+  const wk=Math.ceil((((dt-new Date(Date.UTC(yr,0,1)))/86400000)+1)/7);
+  return {y:yr,w:wk,key:`${yr}-S${String(wk).padStart(2,'0')}`};
 }
 function weekRange(y,w){
-  const simple=new Date(y,0,1+((w-1)*7));
-  const day=simple.getDay();
-  const mon=new Date(simple);
-  mon.setDate(simple.getDate()-(day||7)+1);
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-  return `${mon.toLocaleDateString('es-GT',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('es-GT',{day:'2-digit',month:'short'})}`;
+  const s=new Date(y,0,1+((w-1)*7));
+  const day=s.getDay();
+  const mon=new Date(s); mon.setDate(s.getDate()-(day||7)+1);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt=dt=>dt.toLocaleDateString('es-GT',{day:'2-digit',month:'short'});
+  return `${fmt(mon)} – ${fmt(sun)}`;
 }
 
-// ── File loading ───────────────────────────────
+// ── Carga de archivo ──────────────────────────────────────────
 function loadFile(e){
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{
+  e.target.value='';
+  const reader=new FileReader();
+  reader.onload=ev=>{
     try{
-      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
-      parseHoja1(wb);
-      toast(`✅ ${f.name} cargado`,`ok`);
-    }catch(err){toast('Error: '+err.message,'err')}
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      const result=parseExcel(wb);
+      if(result>0){
+        toast(`✅ ${f.name} · ${result} registros cargados`,'ok');
+      } else {
+        toast(`⚠️ ${f.name} cargado pero sin datos válidos. Verifica el formato.`,'er');
+      }
+    }catch(err){
+      console.error(err);
+      toast('❌ Error al leer: '+err.message,'er');
+    }
   };
-  r.readAsArrayBuffer(f);
+  reader.readAsArrayBuffer(f);
 }
 
-function parseHoja1(wb){
-  // Try hoja1 first, fallback to first sheet
-  const wsName = wb.SheetNames.find(n=>n.toLowerCase().replace(/\s/g,'')===`hoja1`) || wb.SheetNames[0];
+// ── Parser — detecta automáticamente el formato ───────────────
+function parseExcel(wb){
+  // Buscar hoja de datos: primero 'hoja1', luego la primera disponible
+  const wsName = wb.SheetNames.find(n=>n.toLowerCase().replace(/\s/g,'')==='hoja1')
+               || wb.SheetNames[0];
   const ws = wb.Sheets[wsName];
+  
+  // Leer como array-de-arrays — así controlamos todo manualmente
+  // cellDates:true ya está en XLSX.read, raw:false asegura que números
+  // de fecha se conviertan también
+  const arr = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:null});
 
-  // Read as array-of-arrays so we control header detection ourselves.
-  // The sheet has this structure:
-  //   Row 1: "Resultado de la Produccion" (title - NOT a header)
-  //   Row 2: "organizacion: FABRICA ZONA 7"
-  //   Row 3: no_documento | fecha_plan | ... (real column headers)
-  //   Row 4+: data rows
-  //   Row N:  "organizacion: FABRICA UTATLAN"
-  //   Row N+1: no_documento | fecha_plan | ... (headers again)
-  //   Row N+2+: data rows
-  const arrOfArr = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''});
+  let hdrs      = null;   // nombres de columna en minúsculas
+  let currentOrg= '';     // organización del bloque actual
+  const rows    = [];
 
-  // Detect header rows (contain 'no_documento' in first column, case-insensitive)
-  let headers = null;
-  let currentOrg = '';
-  const rows = [];
+  for(const row of arr){
+    if(!row || row.length===0) continue;
+    const c0     = String(row[0]||'').trim();
+    const c0Low  = c0.toLowerCase();
 
-  for(const row of arrOfArr){
-    const c0 = String(row[0]||'').trim().toLowerCase();
-
-    // Section label: "organizacion: FABRICA ZONA 7"
-    if(c0.startsWith('organizacion:')){
-      currentOrg = String(row[0]).replace(/^organizacion:\s*/i,'').trim();
+    // ── Línea de sección: "organizacion: FABRICA ZONA 7"
+    if(c0Low.startsWith('organizacion:')){
+      currentOrg = c0.substring(c0.indexOf(':')+1).trim().toUpperCase();
+      hdrs = null; // resetear encabezados para el nuevo bloque
       continue;
     }
 
-    // Header row: first cell is 'no_documento'
-    if(c0 === 'no_documento'){
-      headers = row.map(h => String(h||'').trim().toLowerCase());
+    // ── Fila de encabezados: empieza con 'no_documento' o 'fecha_plan'
+    if(c0Low==='no_documento' || c0Low==='fecha_plan'){
+      hdrs = row.map(h=>String(h||'').trim().toLowerCase());
       continue;
     }
 
-    // Skip rows before we've found headers, or rows without data
-    if(!headers) continue;
-    const docVal = String(row[0]||'').trim();
-    if(!docVal || !['OD','OP','PR'].includes(docVal.substring(0,2))) continue;
+    if(!hdrs) continue;
 
-    // Map row to object using current headers
-    const obj = {};
-    headers.forEach((h,i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
-    // Inject organization from section label if column is missing/empty
-    if(!obj['organizacion'] || obj['organizacion']==='') obj['organizacion'] = currentOrg;
-    rows.push(obj);
+    // ── Fila de datos
+    // Formato A (con no_documento): primera celda empieza con OD/OP/PR
+    // Formato B (sin no_documento): primera celda es una fecha (Date o string de fecha)
+    const isDateVal = row[0] instanceof Date ||
+                      (typeof row[0]==='string' && row[0].match(/^\d{4}-\d{2}-\d{2}/)) ||
+                      (typeof row[0]==='number' && row[0]>40000 && row[0]<60000);
+    const isDocVal  = typeof row[0]==='string' && ['OD','OP','PR'].includes(row[0].substring(0,2).toUpperCase());
+
+    if(!isDateVal && !isDocVal) continue;
+
+    // Mapear a objeto
+    const obj={};
+    hdrs.forEach((h,i)=>{ obj[h]=(i<row.length && row[i]!==null)?row[i]:''; });
+
+    // Asignar organización si la columna está vacía
+    const orgVal=String(obj['organizacion']||'').trim();
+    if(!orgVal) obj['organizacion']=currentOrg;
+
+    // Determinar qué columna es la fecha
+    const rawFecha = hdrs[0]==='fecha_plan' ? obj['fecha_plan']    // Formato B
+                   : obj['fecha_plan'] || obj['fecha_fin'];         // Formato A
+
+    rows.push({
+      doc:      String(obj['no_documento']     ||'').trim(),
+      cod:      String(obj['codigo_producido'] ||'').trim(),
+      prod:     String(obj['producido']        ||'').trim(),
+      centro:   String(obj['centro']           ||'').trim(),
+      org:      String(obj['organizacion']     ||currentOrg).trim().toUpperCase(),
+      cantPlan: toNum(obj['cant_plan']),
+      totProd:  toNum(obj['total_producido']),
+      uBuenas:  toNum(obj['u_buenas']),
+      uMalas:   toNum(obj['u_malas']),
+      estado:   String(obj['estado']           ||'').trim(),
+      dateStr:  toDateStr(rawFecha),
+    });
   }
 
-  // Helper: fecha can be a JS Date (SheetJS parses date-formatted cells automatically),
-  // an Excel serial number, or a string.
-  function toDateObj(val){
-    if(!val || val==='') return null;
-    if(val instanceof Date) return val;
-    const n = Number(val);
-    if(!isNaN(n) && n > 40000) return excelToDate(n);
-    return null;
-  }
+  // Solo filas con producción real
+  RAW = rows.filter(r=>r.cantPlan>0 && r.totProd>0);
+  console.log(`[FPY] Hoja: "${wsName}" | Filas parseadas: ${rows.length} | Válidas: ${RAW.length}`);
 
-  RAW = rows.map(r=>{
-    const dateObj = toDateObj(r['fecha_plan']);
-    const dateStr = dateObj ? dateToStr(dateObj) : '';
-    return {
-      doc:      String(r['no_documento']     ||'').trim(),
-      cod:      String(r['codigo_producido'] ||'').trim(),
-      prod:     String(r['producido']        ||'').trim(),
-      centro:   String(r['centro']           ||'').trim(),
-      org:      String(r['organizacion']     ||'').trim(),
-      cantPlan: Number(r['cant_plan'])        ||0,
-      totProd:  Number(r['total_producido']) ||0,
-      uBuenas:  Number(r['u_buenas'])        ||0,
-      uMalas:   Number(r['u_malas'])         ||0,
-      rend:     Number(r['rendimiento_%'])   ||0,
-      merma:    Number(r['merma_%'])         ||0,
-      estado:   String(r['estado']           ||'').trim(),
-      dateObj, dateStr,
-    };
-  }).filter(r => r.cantPlan > 0 && r.totProd > 0);
+  if(RAW.length===0) return 0;
 
-  // populate date pickers
-  const dates = RAW.map(r=>r.dateStr).filter(Boolean).sort();
-  if(dates.length){
-    document.getElementById('from-date').value=dates[0];
-    document.getElementById('to-date').value=dates[dates.length-1];
-  }
+  // Poblar controles de fecha
+  const dates=RAW.map(r=>r.dateStr).filter(Boolean).sort();
+  document.getElementById('fd').value=dates[0];
+  document.getElementById('td').value=dates[dates.length-1];
 
-  // populate centro select
-  const centros=[...new Set(RAW.map(r=>r.centro))].sort();
-  const cSel=document.getElementById('centro-sel');
-  cSel.innerHTML='<option value="all">Todos los centros</option>';
-  centros.forEach(c=>{
-    const o=document.createElement('option');
-    o.value=c;o.textContent=c;cSel.appendChild(o);
-  });
+  // Poblar selector de centros
+  const centros=[...new Set(RAW.map(r=>r.centro).filter(Boolean))].sort();
+  const cs=document.getElementById('cs');
+  cs.innerHTML='<option value="all">Todos los centros</option>';
+  centros.forEach(c=>{const o=document.createElement('option');o.value=o.textContent=c;cs.appendChild(o);});
 
   applyFilters();
+  return RAW.length;
 }
 
-// ── Filters ───────────────────────────────────
+// ── Filtros ───────────────────────────────────────────────────
 function applyFilters(){
   if(!RAW.length) return;
-  const from   = document.getElementById('from-date').value;
-  const to     = document.getElementById('to-date').value;
-  const planta = document.getElementById('planta-sel').value;
-  const centro = document.getElementById('centro-sel').value;
+  const fd=document.getElementById('fd').value;
+  const td=document.getElementById('td').value;
+  const ps=document.getElementById('ps').value;
+  const cs=document.getElementById('cs').value;
 
-  FILTERED = RAW.filter(r=>{
-    if(from && r.dateStr < from) return false;
-    if(to   && r.dateStr > to  ) return false;
-    if(planta!=='all' && r.org!==planta) return false;
-    if(centro!=='all' && r.centro!==centro) return false;
+  FILTERED=RAW.filter(r=>{
+    if(fd && r.dateStr<fd) return false;
+    if(td && r.dateStr>td) return false;
+    // Planta: busca si el org contiene la clave
+    if(ps==='ZONA7'   && !r.org.includes('ZONA 7'))   return false;
+    if(ps==='UTATLAN' && !r.org.includes('UTATLAN'))  return false;
+    if(cs!=='all' && r.centro!==cs) return false;
     return true;
   });
 
-  const label = from&&to ? `${from} al ${to}` : `Todos los registros`;
-  document.getElementById('hero-sub').textContent = `${fmtN(FILTERED.length)} órdenes · ${label}`;
-
-  renderKPIs();
-  renderFPYChart();
-  renderFPYTable();
-  renderCentros();
-  renderTop5();
+  const lbl=fd&&td?`${fd} → ${td}`:'todos los registros';
+  document.getElementById('hsub').textContent=`${fmtN(FILTERED.length)} órdenes · ${lbl}`;
+  renderKPIs(); renderChart(); renderTable(); renderCentros(); renderTop5();
 }
+
 function resetFilters(){
   const dates=RAW.map(r=>r.dateStr).filter(Boolean).sort();
-  if(dates.length){
-    document.getElementById('from-date').value=dates[0];
-    document.getElementById('to-date').value=dates[dates.length-1];
-  }
-  document.getElementById('planta-sel').value='all';
-  document.getElementById('centro-sel').value='all';
+  if(dates.length){document.getElementById('fd').value=dates[0];document.getElementById('td').value=dates[dates.length-1];}
+  document.getElementById('ps').value='all';
+  document.getElementById('cs').value='all';
   applyFilters();
 }
 
-// ── KPI render ────────────────────────────────
-function computeFPY(rows){
-  const tot=rows.reduce((s,r)=>s+r.totProd,0);
-  const bue=rows.reduce((s,r)=>s+r.uBuenas,0);
-  return tot>0?bue/tot:0;
+// ── KPIs ──────────────────────────────────────────────────────
+function fpyOf(arr){
+  const t=arr.reduce((s,r)=>s+r.totProd,0);
+  const b=arr.reduce((s,r)=>s+r.uBuenas,0);
+  return t>0?b/t:0;
+}
+function setKPI(id,v,fmt){
+  const el=document.getElementById(id);
+  el.className='kv '+colorCls(v);
+  el.textContent=fmt;
 }
 function renderKPIs(){
-  const z7 = FILTERED.filter(r=>r.org==='FABRICA ZONA 7');
-  const ut = FILTERED.filter(r=>r.org==='FABRICA UTATLAN');
-  const gl = FILTERED;
-
-  const fGl=computeFPY(gl), fZ7=computeFPY(z7), fUt=computeFPY(ut);
+  const z7=FILTERED.filter(r=>r.org.includes('ZONA 7'));
+  const ut=FILTERED.filter(r=>r.org.includes('UTATLAN'));
+  const gl=FILTERED;
+  const fg=fpyOf(gl),fz=fpyOf(z7),fu=fpyOf(ut);
   const plan=gl.reduce((s,r)=>s+r.cantPlan,0);
   const prod=gl.reduce((s,r)=>s+r.totProd,0);
   const bue=gl.reduce((s,r)=>s+r.uBuenas,0);
   const mal=gl.reduce((s,r)=>s+r.uMalas,0);
-  const rend=plan>0?prod/plan:0;
-  const merma=bue>0?mal/bue:0;
-
-  function cls(v){return v>=0.98?'good':v>=0.95?'warn':'bad'}
-
-  document.getElementById('kpi-fpy-global').className='kpi-value '+cls(fGl);
-  document.getElementById('kpi-fpy-global').textContent=pct(fGl);
-  document.getElementById('kpi-fpy-z7').className='kpi-value '+cls(fZ7);
-  document.getElementById('kpi-fpy-z7').textContent=fZ7>0?pct(fZ7):'—';
-  document.getElementById('kpi-fpy-ut').className='kpi-value '+cls(fUt);
-  document.getElementById('kpi-fpy-ut').textContent=fUt>0?pct(fUt):'—';
-  document.getElementById('kpi-rend').className='kpi-value '+(rend>=1?'good':rend>=0.95?'warn':'bad');
-  document.getElementById('kpi-rend').textContent=pct(rend);
-  document.getElementById('kpi-merma').className='kpi-value '+(merma<0.02?'good':merma<0.05?'warn':'bad');
-  document.getElementById('kpi-merma').textContent=pct(merma);
-  document.getElementById('kpi-ordenes').className='kpi-value';
-  document.getElementById('kpi-ordenes').textContent=fmtN(gl.length);
+  const rn=plan>0?prod/plan:0;
+  const mr=bue>0?mal/bue:0;
+  setKPI('kfg',fg,fmtP(fg));
+  setKPI('kfz',fz,fz>0?fmtP(fz):'—');
+  setKPI('kfu',fu,fu>0?fmtP(fu):'—');
+  const rnEl=document.getElementById('krn');
+  rnEl.className='kv '+(rn>=1?'ok':rn>=0.95?'wn':'bd');
+  rnEl.textContent=fmtP(rn);
+  const mrEl=document.getElementById('kmr');
+  mrEl.className='kv '+(mr<0.02?'ok':mr<0.05?'wn':'bd');
+  mrEl.textContent=fmtP(mr);
+  document.getElementById('kor').className='kv';
+  document.getElementById('kor').textContent=fmtN(gl.length);
 }
 
-// ── FPY Chart ─────────────────────────────────
-function renderFPYChart(){
+// ── Gráfica FPY ───────────────────────────────────────────────
+function mkBadge(v){
+  if(v===null||isNaN(v)) return '—';
+  const c=v>=0.98?'bhi':v>=0.95?'bmd':'blo';
+  return `<span class="badge ${c}">${fmtP(v)}</span>`;
+}
+
+function renderChart(){
   if(!FILTERED.length){
-    document.getElementById('fpy-body').innerHTML='<div class="empty-state"><div class="icon">📈</div><p>Sin datos para el período seleccionado</p></div>';
+    document.getElementById('fpy-body').innerHTML='<div class="em"><div class="ei">📈</div><p>Sin datos para el período seleccionado</p></div>';
     return;
   }
-
-  // group by ISO week
-  const byWeek={};
+  const byW={};
   FILTERED.forEach(r=>{
-    if(!r.dateObj) return;
-    const wk=isoWeek(r.dateObj);
-    if(!byWeek[wk.key]) byWeek[wk.key]={key:wk.key,y:wk.y,w:wk.w,z7:{tot:0,bue:0},ut:{tot:0,bue:0},gl:{tot:0,bue:0}};
-    const entry=byWeek[wk.key];
-    entry.gl.tot+=r.totProd; entry.gl.bue+=r.uBuenas;
-    if(r.org==='FABRICA ZONA 7'){entry.z7.tot+=r.totProd;entry.z7.bue+=r.uBuenas;}
-    else{entry.ut.tot+=r.totProd;entry.ut.bue+=r.uBuenas;}
+    const wk=isoWeek(r.dateStr); if(!wk) return;
+    if(!byW[wk.key]) byW[wk.key]={...wk,z7:{t:0,b:0},ut:{t:0,b:0},gl:{t:0,b:0}};
+    const e=byW[wk.key];
+    e.gl.t+=r.totProd; e.gl.b+=r.uBuenas;
+    if(r.org.includes('ZONA 7')){e.z7.t+=r.totProd;e.z7.b+=r.uBuenas;}
+    else{e.ut.t+=r.totProd;e.ut.b+=r.uBuenas;}
   });
+  WEEKS=Object.values(byW).sort((a,b)=>a.key.localeCompare(b.key));
 
-  const weeks=Object.values(byWeek).sort((a,b)=>a.key.localeCompare(b.key));
-  WEEKS=weeks;
-
-  // reference line at 97% → 97/100 of bar width
-  const REF=97;
-  const rows=weeks.map(wk=>{
-    const fz7=wk.z7.tot>0?wk.z7.bue/wk.z7.tot*100:null;
-    const fut=wk.ut.tot>0?wk.ut.bue/wk.ut.tot*100:null;
-    const fgl=wk.gl.bue/wk.gl.tot*100;
-    const range=weekRange(wk.y,wk.w);
-
-    const makeLine=(val,cls,label)=>{
-      if(val===null) return '';
-      const w=Math.min(val,105);
-      return `<div class="bar-line ${cls}">
-        <div class="bar-plant">${label}</div>
-        <div class="bar-track" style="--ref-pos:${REF}%">
-          <div class="bar-fill" style="width:${w}%"><span>${val.toFixed(2)}%</span></div>
-        </div>
-        <div class="bar-pct">${badgeFPY(val/100)}</div>
-      </div>`;
-    };
-
-    return `<div class="week-row">
-      <div class="week-label"><strong>Sem ${wk.w}</strong><br><span style="font-size:.62rem">${range}</span></div>
-      <div class="bars-group">
-        ${makeLine(fgl,'bar-global','Global')}
-        ${makeLine(fz7,'bar-zona7','Zona 7')}
-        ${makeLine(fut,'bar-utatlan','Utatlan')}
-      </div>
+  const mkLine=(d,cls,lbl)=>{
+    if(!d||d.t===0) return '';
+    const v=d.b/d.t*100;
+    const w=Math.min(v,104).toFixed(1);
+    return `<div class="bline ${cls}">
+      <div class="bplt">${lbl}</div>
+      <div class="btrk"><div class="bfil" style="width:${w}%"><span>${v.toFixed(2)}%</span></div></div>
+      <div class="bpct">${mkBadge(d.b/d.t)}</div>
     </div>`;
-  }).join('');
-
-  document.getElementById('fpy-body').innerHTML=`
-    <p style="font-size:.76rem;color:var(--ink-lt);margin-bottom:14px">
-      La línea roja vertical indica el objetivo de referencia de <strong>97%</strong>.
-    </p>
-    <div class="fpy-chart-wrap"><div class="fpy-chart">${rows}</div></div>`;
-}
-
-function badgeFPY(v){
-  const s=pct(v);
-  const cls=v>=0.98?'fpy-hi':v>=0.95?'fpy-mid':'fpy-lo';
-  return `<span class="fpy-badge ${cls}">${s}</span>`;
-}
-
-// ── FPY Table ─────────────────────────────────
-function renderFPYTable(){
-  if(!WEEKS.length){
-    document.getElementById('fpy-table-body').innerHTML='<div class="empty-state"><div class="icon">📊</div><p>Sin datos</p></div>';
-    return;
-  }
-
-  const headers=WEEKS.map(w=>`<th>Sem ${w.w}<br><small>${w.y}</small></th>`).join('');
-  const rowsData=['z7','ut','gl'].map(key=>{
-    const labels={'z7':'Fábrica Zona 7','ut':'Fábrica Utatlan','gl':'Global'};
-    const tds=WEEKS.map(wk=>{
-      const v=wk[key].tot>0?wk[key].bue/wk[key].tot:null;
-      return `<td>${v!==null?badgeFPY(v):'—'}</td>`;
-    }).join('');
-    return `<tr><td>${labels[key]}</td>${tds}</tr>`;
-  });
-
-  // totals row
-  const totTds=WEEKS.map(wk=>{
-    const v=wk.gl.tot>0?wk.gl.bue/wk.gl.tot:null;
-    return `<td>${v!==null?badgeFPY(v):'—'}</td>`;
-  }).join('');
-
-  document.getElementById('fpy-table-body').innerHTML=`
-    <div class="fpy-table-wrap">
-      <table class="data-table">
-        <thead><tr><th>Planta</th>${headers}</tr></thead>
-        <tbody>
-          ${rowsData.join('')}
-          <tr><td>Total período</td>${totTds}</tr>
-        </tbody>
-      </table>
-    </div>`;
-}
-
-// ── Centros ───────────────────────────────────
-function renderCentros(){
-  // Exclude intermediate centers
-  const data = FILTERED.filter(r=>!EXCL_CENTROS.includes(r.centro));
-  if(!data.length){
-    document.getElementById('centros-body').innerHTML='<div class="empty-state"><div class="icon">🏭</div><p>Sin datos</p></div>';
-    return;
-  }
-
-  const byCentro={};
-  data.forEach(r=>{
-    const k=r.centro+'||'+r.org;
-    if(!byCentro[k]) byCentro[k]={centro:r.centro,org:r.org,plan:0,prod:0,bue:0,mal:0};
-    const e=byCentro[k];
-    e.plan+=r.cantPlan;e.prod+=r.totProd;e.bue+=r.uBuenas;e.mal+=r.uMalas;
-  });
-
-  const entries=Object.values(byCentro).sort((a,b)=>{
-    const ra=a.prod/a.plan, rb=b.prod/b.plan;
-    return rb-ra;
-  });
-
-  const maxRend=Math.max(...entries.map(e=>e.prod/e.plan*100));
-  const maxMerma=Math.max(...entries.map(e=>e.bue>0?e.mal/e.bue*100:0));
-
-  const cards=entries.map(e=>{
-    const rend=e.prod/e.plan*100;
-    const merma=e.bue>0?e.mal/e.bue*100:0;
-    const rendW=Math.min(rend/maxRend*100,100);
-    const mermaW=maxMerma>0?Math.min(merma/maxMerma*100,100):0;
-    const orgShort=e.org==='FABRICA ZONA 7'?'Zona 7':'Utatlan';
-    return `<div class="centro-card">
-      <div class="centro-card-head">
-        <div class="centro-name" title="${e.centro}">${e.centro}</div>
-        <div class="centro-org">${orgShort}</div>
-      </div>
-      <div class="centro-metrics">
-        <div class="metric-row">
-          <div class="metric-name">Rendim.</div>
-          <div class="metric-bar"><div class="metric-bar-fill rend-fill" style="width:${rendW}%"></div></div>
-          <div class="metric-val" style="color:${rend>=100?'var(--green)':rend>=95?'var(--gold)':'var(--red)'}">${rend.toFixed(1)}%</div>
-        </div>
-        <div class="metric-row">
-          <div class="metric-name">Merma</div>
-          <div class="metric-bar"><div class="metric-bar-fill merma-fill" style="width:${mermaW}%"></div></div>
-          <div class="metric-val" style="color:${merma<2?'var(--green)':merma<5?'var(--gold)':'var(--red)'}">${merma.toFixed(2)}%</div>
-        </div>
-        <div style="font-size:.68rem;color:var(--ink-lt);margin-top:4px">
-          Plan: ${fmtN(e.plan)} u · Producido: ${fmtN(e.prod)} u · Malas: ${fmtN(e.mal)} u
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('centros-body').innerHTML=`<div class="centro-grid">${cards}</div>`;
-}
-
-// ── Top 5 ─────────────────────────────────────
-function renderTop5(){
-  const data=FILTERED.filter(r=>!EXCL_CENTROS.includes(r.centro));
-  if(!data.length){
-    document.getElementById('top5-body').innerHTML='<div class="empty-state"><div class="icon">🥐</div><p>Sin datos</p></div>';
-    return;
-  }
-
-  // Group by product
-  const byProd={};
-  data.forEach(r=>{
-    if(!byProd[r.prod]) byProd[r.prod]={prod:r.prod,plan:0,prod_u:0,bue:0,mal:0,ords:0};
-    const e=byProd[r.prod];
-    e.plan+=r.cantPlan;e.prod_u+=r.totProd;e.bue+=r.uBuenas;e.mal+=r.uMalas;e.ords++;
-  });
-
-  const arr=Object.values(byProd).filter(e=>e.plan>0&&e.prod_u>0);
-
-  const top5rend=[...arr].sort((a,b)=>b.prod_u/b.plan-a.prod_u/a.plan).slice(0,5);
-  const top5merma=[...arr].filter(e=>e.bue>0).sort((a,b)=>b.mal/b.bue-a.mal/a.bue).slice(0,5);
-
-  const makeTable=(rows,type)=>{
-    const isRend=type==='rend';
-    const trs=rows.map((e,i)=>{
-      const rend=(e.prod_u/e.plan*100).toFixed(1);
-      const merma=e.bue>0?(e.mal/e.bue*100).toFixed(2):'0.00';
-      const main=isRend?`<span style="font-weight:600;color:var(--green)">${rend}%</span>`
-                       :`<span style="font-weight:600;color:var(--red)">${merma}%</span>`;
-      return `<tr>
-        <td>${i+1}</td>
-        <td style="text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.prod}">${e.prod}</td>
-        <td>${e.ords}</td>
-        <td>${main}</td>
-        <td>${isRend?merma+'%':rend+'%'}</td>
-      </tr>`;
-    }).join('');
-
-    const h1=isRend?'Rend. %':'Merma %';
-    const h2=isRend?'Merma %':'Rend. %';
-
-    return `<table class="data-table" style="font-size:.8rem">
-      <thead><tr><th>#</th><th style="text-align:left">Producto</th><th>Órdenes</th><th>${h1}</th><th>${h2}</th></tr></thead>
-      <tbody>${trs}</tbody>
-    </table>`;
   };
 
-  document.getElementById('top5-body').innerHTML=`
-    <div class="tops-row">
-      <div class="top-section">
-        <h3>🟢 Mejores rendimientos</h3>
-        ${makeTable(top5rend,'rend')}
+  const rows=WEEKS.map(wk=>`
+    <div class="wrow">
+      <div class="wlbl"><strong>Sem ${wk.w}</strong><br><span style="font-size:.6rem">${weekRange(wk.y,wk.w)}</span></div>
+      <div class="bgrp">
+        ${mkLine(wk.gl,'gl-bar','Global')}
+        ${mkLine(wk.z7,'z7-bar','Zona 7')}
+        ${mkLine(wk.ut,'ut-bar','Utatlan')}
       </div>
-      <div class="top-section">
-        <h3>🔴 Mayores mermas</h3>
-        ${makeTable(top5merma,'merma')}
-      </div>
-    </div>`;
+    </div>`).join('');
+
+  document.getElementById('fpy-body').innerHTML=`<div class="scrollx"><div class="fpy-chart">${rows}</div></div>`;
 }
 
-// ── Drag & Drop ───────────────────────────────
+// ── Tabla FPY ─────────────────────────────────────────────────
+function renderTable(){
+  if(!WEEKS.length){
+    document.getElementById('tbl-body').innerHTML='<div class="em"><div class="ei">📊</div><p>Sin datos</p></div>';
+    return;
+  }
+  const hdrs=WEEKS.map(w=>`<th>Sem ${w.w}<br><small>${w.y}</small></th>`).join('');
+  const mkRow=(label,key)=>`<tr><td>${label}</td>${WEEKS.map(wk=>{const d=wk[key];return`<td>${d&&d.t>0?mkBadge(d.b/d.t):'—'}</td>`;}).join('')}</tr>`;
+  document.getElementById('tbl-body').innerHTML=`
+    <div class="scrollx"><table class="dtbl">
+      <thead><tr><th>Planta</th>${hdrs}</tr></thead>
+      <tbody>
+        ${mkRow('Fábrica Zona 7','z7')}
+        ${mkRow('Fábrica Utatlan','ut')}
+        ${mkRow('Global','gl')}
+      </tbody>
+    </table></div>`;
+}
+
+// ── Centros ───────────────────────────────────────────────────
+function renderCentros(){
+  const data=FILTERED.filter(r=>!EXCL.includes(r.centro.toUpperCase()));
+  if(!data.length){document.getElementById('ctr-body').innerHTML='<div class="em"><div class="ei">🏭</div><p>Sin datos</p></div>';return;}
+  const map={};
+  data.forEach(r=>{
+    const k=r.centro+'||'+r.org;
+    if(!map[k]) map[k]={nm:r.centro,org:r.org,pl:0,pr:0,bu:0,ma:0};
+    const e=map[k];e.pl+=r.cantPlan;e.pr+=r.totProd;e.bu+=r.uBuenas;e.ma+=r.uMalas;
+  });
+  const arr=Object.values(map).sort((a,b)=>b.pr/b.pl-a.pr/a.pl);
+  const maxR=Math.max(...arr.map(e=>e.pr/e.pl*100),1);
+  const maxM=Math.max(...arr.map(e=>e.bu>0?e.ma/e.bu*100:0),0.001);
+  const cards=arr.map(e=>{
+    const rn=e.pr/e.pl*100,mr=e.bu>0?e.ma/e.bu*100:0;
+    const org=e.org.includes('ZONA 7')?'Zona 7':'Utatlan';
+    const rc=rn>=100?'var(--gn)':rn>=95?'var(--go)':'var(--rd)';
+    const mc=mr<2?'var(--gn)':mr<5?'var(--go)':'var(--rd)';
+    return `<div class="ccard">
+      <div class="cch"><div class="cnm" title="${e.nm}">${e.nm}</div><div class="corp">${org}</div></div>
+      <div class="mrow2"><div class="mn">Rendim.</div><div class="mbar"><div class="mfil rf" style="width:${rn/maxR*100}%"></div></div><div class="mv" style="color:${rc}">${rn.toFixed(1)}%</div></div>
+      <div class="mrow2"><div class="mn">Merma</div><div class="mbar"><div class="mfil mf" style="width:${mr/maxM*100}%"></div></div><div class="mv" style="color:${mc}">${mr.toFixed(2)}%</div></div>
+      <div style="font-size:.67rem;color:var(--il);margin-top:3px">Plan: ${fmtN(e.pl)} · Prod: ${fmtN(e.pr)} · Malas: ${fmtN(e.ma)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('ctr-body').innerHTML=`<div class="cgrid">${cards}</div>`;
+}
+
+// ── Top 5 ─────────────────────────────────────────────────────
+function renderTop5(){
+  const data=FILTERED.filter(r=>!EXCL.includes(r.centro.toUpperCase()));
+  if(!data.length){document.getElementById('top-body').innerHTML='<div class="em"><div class="ei">🥐</div><p>Sin datos</p></div>';return;}
+  const map={};
+  data.forEach(r=>{
+    if(!map[r.prod]) map[r.prod]={nm:r.prod,pl:0,pr:0,bu:0,ma:0,n:0};
+    const e=map[r.prod];e.pl+=r.cantPlan;e.pr+=r.totProd;e.bu+=r.uBuenas;e.ma+=r.uMalas;e.n++;
+  });
+  const arr=Object.values(map).filter(e=>e.pl>0&&e.pr>0);
+  const t5r=[...arr].sort((a,b)=>b.pr/b.pl-a.pr/a.pl).slice(0,5);
+  const t5m=[...arr].filter(e=>e.bu>0).sort((a,b)=>b.ma/b.bu-a.ma/a.bu).slice(0,5);
+  const mkTbl=(rows,isR)=>{
+    const trs=rows.map((e,i)=>{
+      const rn=(e.pr/e.pl*100).toFixed(1),mr=e.bu>0?(e.ma/e.bu*100).toFixed(2):'0.00';
+      const main=isR?`<strong style="color:var(--gn)">${rn}%</strong>`:`<strong style="color:var(--rd)">${mr}%</strong>`;
+      return `<tr><td>${i+1}</td><td style="text-align:left;max-width:185px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.nm}">${e.nm}</td><td>${e.n}</td><td>${main}</td><td>${isR?mr+'%':rn+'%'}</td></tr>`;
+    }).join('');
+    return `<table class="dtbl" style="font-size:.79rem"><thead><tr><th>#</th><th style="text-align:left">Producto</th><th>Ords</th><th>${isR?'Rend.%':'Merma%'}</th><th>${isR?'Merma%':'Rend.%'}</th></tr></thead><tbody>${trs}</tbody></table>`;
+  };
+  document.getElementById('top-body').innerHTML=`<div class="trow">
+    <div class="ts"><h3>🟢 Mejores rendimientos</h3>${mkTbl(t5r,true)}</div>
+    <div class="ts"><h3>🔴 Mayores mermas</h3>${mkTbl(t5m,false)}</div>
+  </div>`;
+}
+
+// ── Drag & Drop ───────────────────────────────────────────────
 const dz=document.getElementById('dz');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{
   e.preventDefault();dz.classList.remove('over');
-  const f=e.dataTransfer.files[0];
-  if(f){const dt=new DataTransfer();dt.items.add(f);
-    document.getElementById('fileInput').files=dt.files;
-    loadFile({target:{files:dt.files}});}
+  const f=e.dataTransfer.files[0];if(!f)return;
+  const dt=new DataTransfer();dt.items.add(f);
+  const fi=document.getElementById('fi');fi.files=dt.files;
+  loadFile({target:{files:fi.files}});
 });
 
-// ── Auto-load weekly file ─────────────────────
+// ── Carga automática desde GitHub ────────────────────────────
 (function autoLoad(){
-  const now=new Date();
-  const y=now.getFullYear();
-  const m=String(now.getMonth()+1).padStart(2,'0');
-  const d=String(now.getDate()).padStart(2,'0');
-  const today=`${y}-${m}-${d}`;
-  fetch(`data/weekly/Analisis_produccion_${today}.xlsx?v=${Date.now()}`)
-    .then(r=>r.ok?r.arrayBuffer():null)
+  const n=new Date();
+  const ds=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  fetch(`data/weekly/Analisis_produccion_${ds}.xlsx?nc=${Date.now()}`)
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject('404'))
     .then(buf=>{
-      if(!buf) return;
-      const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
-      parseHoja1(wb);
-      toast('✅ Datos de la semana cargados automáticamente','ok');
-    }).catch(()=>{});
+      const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:true});
+      const n=parseExcel(wb);
+      if(n>0) toast(`✅ Datos de hoy cargados automáticamente (${fmtN(n)} registros)`,'ok');
+    })
+    .catch(()=>{}); // silencioso si no hay archivo del día
 })();
 </script>
 </body>
