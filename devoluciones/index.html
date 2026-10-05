@@ -262,6 +262,12 @@
   @media (max-width:900px){ .weekly-grid{grid-template-columns:1fr;} }
   .rank-badge.rN{background:#d9c3c3;color:var(--maroon-800);}
 
+  .data-notice{
+    margin:12px 22px 0;padding:10px 14px;border-radius:8px;
+    background:#fff6e0;border:1px solid #ecd49a;color:#6a4a07;font-size:13px;line-height:1.5;
+  }
+  .data-notice .n-warn{font-weight:700;color:#8a4a00;}
+  .data-notice div + div{margin-top:4px;}
   .detail-toggle{
     display:flex;align-items:center;gap:8px;width:100%;
     font:inherit;font-size:13.5px;font-weight:700;color:var(--maroon-800);
@@ -288,7 +294,7 @@
     <span class="status-pill" id="statusPill"><span class="status-dot off" id="statusDot"></span><span id="statusText">Sin datos</span></span>
     <button class="btn ghost" id="btnUpload">⬆ Cargar Excel</button>
     <button class="btn" id="btnExport">⬇ Exportar CSV</button>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <input type="file" id="fileInput" accept=".xlsx,.xls" multiple />
   </div>
 </header>
 
@@ -321,6 +327,8 @@
   </div>
   <button class="reset-filters" id="btnReset">Limpiar filtros</button>
 </div>
+
+<div id="dataNotice" class="data-notice" style="display:none;"></div>
 
 <main id="mainArea"></main>
 
@@ -478,6 +486,160 @@ function parseRowsFromSheetJson(rows){
   return out;
 }
 
+/* ==== PURE-START (esta sección se prueba automáticamente en Node) ==== */
+function stripAccents(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function normKey(s){ return stripAccents(String(s==null?'':s).replace(/\u00a0/g,' ').trim().toLowerCase()).replace(/\s+/g,' '); }
+
+/* Equivalencias de nombre de tienda entre el ERP y el histórico (editable) */
+const STORE_ALIASES = {
+  'ZONA 7': 'ISOPAN ZONA 7',
+  'EL PARADOR': 'EL PARADOR BARCENAS'
+};
+function normalizeStore(raw){
+  let s = String(raw==null?'':raw).replace(/\u00a0/g,' ').trim().replace(/\s+/g,' ');
+  s = s.replace(/^POS\s*\d+\s+/i,'');      // quita el prefijo "POS70 "
+  s = s.replace(/,?\s*S\.A\.?$/i,'');       // quita ", S.A."
+  s = s.toUpperCase().trim();
+  return STORE_ALIASES[s] || s;
+}
+
+/* Fecha dd/mm/yyyy (texto del ERP), serial de Excel o Date */
+function parseDateDMY(v){
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (typeof v === 'number') return excelSerialToDate(v);
+  const m = String(v).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+  return isNaN(d) ? null : d;
+}
+function parseQty(v){
+  const n = Number(String(v==null?'':v).replace(/,/g,''));
+  return isNaN(n) ? 0 : n;
+}
+
+function findErpHeaderIdx(rows, maxScan){
+  const lim = Math.min(maxScan || 15, rows.length);
+  for (let i=0;i<lim;i++){
+    const h = (rows[i]||[]).map(normKey);
+    if (h.includes('tipo de albaran') && h.includes('cantidad') && h.includes('fecha')) return i;
+  }
+  return -1;
+}
+function detectFormat(rows){
+  if (findErpHeaderIdx(rows) >= 0) return 'erp';
+  return 'legacy';
+}
+
+/* Formato ERP "ReportInoutDetail": una fila por línea de documento.
+   - "Devolucion de Sucursal"               -> devolución (razón "Devolución")
+   - "Devolucion por Mala Produccion (POS)" -> mala producción (el ERP no trae razón)
+   - se ignora la fila "Totales" del final */
+function parseErpRows(rows){
+  const hIdx = findErpHeaderIdx(rows);
+  const headers = rows[hIdx].map(normKey);
+  const ix = n => headers.indexOf(n);
+  const c = { fecha:ix('fecha'), tipo:ix('tipo de albaran'), tercero:ix('tercero'),
+              codigo:ix('codigo'), producto:ix('producto'), etapa:ix('etapa de producto'), cant:ix('cantidad') };
+  const out = [];
+  const notes = [];
+  let sinFecha = 0;
+  const tiposRaros = new Set();
+  for (let i=hIdx+1;i<rows.length;i++){
+    const r = rows[i];
+    if (!r) continue;
+    const tipo = normKey(r[c.tipo]);
+    const etapa = c.etapa >= 0 ? normKey(r[c.etapa]) : '';
+    if (!tipo || etapa === 'totales') continue;              // fila de totales o vacía
+    const fecha = parseDateDMY(r[c.fecha]);
+    if (!fecha){ sinFecha++; continue; }
+    const isMp = tipo.includes('mala produccion');
+    const isDev = tipo.includes('devolucion');
+    if (!isMp && !isDev){ tiposRaros.add(String(r[c.tipo]).trim()); continue; }
+    const qty = parseQty(r[c.cant]);
+    out.push({
+      fecha,
+      tienda: normalizeStore(r[c.tercero]),
+      codigo: String(r[c.codigo]==null?'':r[c.codigo]).replace(/\u00a0/g,' ').trim(),
+      producto: String(r[c.producto]==null?'':r[c.producto]).replace(/\u00a0/g,' ').trim(),
+      devolucion: isMp ? 0 : qty,
+      malaProduccion: isMp ? qty : 0,
+      total: qty,
+      razon: isMp ? '' : 'Devolución'
+    });
+  }
+  if (sinFecha) notes.push(`${sinFecha} filas del ERP sin fecha válida fueron omitidas.`);
+  if (tiposRaros.size) notes.push(`Tipos de albarán no reconocidos (omitidos): ${[...tiposRaros].join(', ')}.`);
+  return { rows: out, notes };
+}
+
+function parseAnyRows(rows){
+  const format = detectFormat(rows);
+  if (format === 'erp'){
+    const r = parseErpRows(rows);
+    return { format, rows: r.rows, notes: r.notes };
+  }
+  return { format, rows: parseRowsFromSheetJson(rows), notes: [] };
+}
+
+/* Une las fuentes. El histórico va primero; cada archivo posterior reemplaza lo anterior
+   en las fechas que cubre (así nunca se cuenta dos veces un mismo día). */
+function mergeSources(parts){
+  const ordered = parts.filter(p=>p.format!=='erp').concat(parts.filter(p=>p.format==='erp'));
+  let acc = [];
+  let replaced = 0;
+  let erpMin = null, erpMax = null;
+  ordered.forEach((p, idx)=>{
+    let min = null, max = null;
+    for (const r of p.rows){
+      if (!r.fecha) continue;
+      if (!min || r.fecha < min) min = r.fecha;
+      if (!max || r.fecha > max) max = r.fecha;
+    }
+    if (idx > 0 && min){
+      const kept = [];
+      for (const r of acc){
+        if (r.fecha && r.fecha >= min && r.fecha <= max) replaced++;
+        else kept.push(r);
+      }
+      acc = kept;
+    }
+    for (const r of p.rows) acc.push(r);
+    if (p.format === 'erp' && min){
+      if (!erpMin || min < erpMin) erpMin = min;
+      if (!erpMax || max > erpMax) erpMax = max;
+    }
+  });
+  return { rows: acc, replaced, erpRange: erpMin ? { min: erpMin, max: erpMax } : null };
+}
+
+/* Periodos sin ningún dato (>= minDays días seguidos) dentro del rango cargado */
+function detectGaps(rows, minDays){
+  const lim = minDays || 3;
+  const set = new Set();
+  for (const r of rows){
+    if (!r.fecha) continue;
+    set.add(Math.floor(Date.UTC(r.fecha.getFullYear(), r.fecha.getMonth(), r.fecha.getDate()) / 86400000));
+  }
+  const days = [...set].sort((a,b)=>a-b);
+  const toLocal = dn => { const u = new Date(dn*86400000); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); };
+  const gaps = [];
+  for (let i=1;i<days.length;i++){
+    const missing = days[i] - days[i-1] - 1;
+    if (missing >= lim) gaps.push({ from: toLocal(days[i-1]+1), to: toLocal(days[i]-1), days: missing });
+  }
+  return gaps;
+}
+
+/* Reconoce si lo descargado es realmente un Excel (xls = D0CF11E0, xlsx = "PK") y no una página HTML */
+function sniffFormat(ab){
+  const u = new Uint8Array(ab, 0, Math.min(8, ab.byteLength));
+  if (u[0]===0xD0 && u[1]===0xCF && u[2]===0x11 && u[3]===0xE0) return 'xls';
+  if (u[0]===0x50 && u[1]===0x4B) return 'xlsx';
+  return null;
+}
+/* ==== PURE-END ==== */
+
 /* Parse using a Web Worker so large files (100k+ rows) don't freeze the UI.
    Falls back to main-thread parsing if workers aren't available. */
 let _workerUrl = null;
@@ -509,7 +671,7 @@ function parseWorkbookAsync(ab){
         const wb = XLSX.read(ab, {type:'array', cellDates:false});
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
-        resolve(parseRowsFromSheetJson(rows));
+        resolve(parseAnyRows(rows));
       }catch(err){ reject(err); }
       return;
     }
@@ -520,7 +682,9 @@ function parseWorkbookAsync(ab){
     worker.onmessage = (e)=>{
       clearTimeout(timeout);
       worker.terminate();
-      if (e.data.ok) resolve(parseRowsFromSheetJson(e.data.rows));
+      if (e.data.ok){
+        try{ resolve(parseAnyRows(e.data.rows)); }catch(err){ reject(err); }
+      }
       else reject(new Error(e.data.error));
     };
     worker.onerror = (err)=>{
@@ -534,10 +698,26 @@ function parseWorkbookAsync(ab){
 }
 
 /* ---------- Data loading ---------- */
-const DATA_PATH = 'data/reporte_devolucion_pm.xlsx';
+/* Archivos que el tablero busca en la carpeta data/ del repositorio.
+   - Histórico (formato anterior, opcional)
+   - Exportes del ERP (ReportInoutDetail). Si un periodo no cabe en un solo .xls (máx. 65,536 filas),
+     se parte en ReportInoutDetail_2.xls, _3.xls ... (un archivo posterior reemplaza fechas repetidas). */
+const DATA_FILES = [
+  { path:'data/reporte_devolucion_pm.xlsx',  label:'Histórico (formato anterior)' },
+  { path:'data/ReportInoutDetail.xls',       label:'ERP' },
+  { path:'data/ReportInoutDetail_2.xls',     label:'ERP (2)' },
+  { path:'data/ReportInoutDetail_3.xls',     label:'ERP (3)' },
+  { path:'data/ReportInoutDetail_4.xls',     label:'ERP (4)' },
+  { path:'data/ReportInoutDetail_5.xls',     label:'ERP (5)' }
+];
 
+function hideNotice(){
+  const n = document.getElementById('dataNotice');
+  if (n){ n.style.display = 'none'; n.innerHTML = ''; }
+}
 function renderLoading(msg){
   document.getElementById('filterbar').style.display = 'none';
+  hideNotice();
   document.getElementById('mainArea').innerHTML = `
     <div class="panel" style="grid-column:1/-1;">
       <div class="load-overlay">
@@ -548,57 +728,96 @@ function renderLoading(msg){
     </div>`;
 }
 
-async function loadFromRepo(){
-  setStatus('loading','Buscando datos…');
-  renderLoading('Descargando el reporte…');
-  let res;
+async function fetchSpreadsheet(file){
   try{
-    res = await fetch(DATA_PATH + '?v=' + Date.now(), {cache:'no-store'});
-  }catch(networkErr){
-    setStatus('off','Error de red');
-    renderEmpty(`No se pudo conectar para descargar el archivo.\n\nDetalle: ${networkErr.message}`);
-    return;
-  }
-  if (!res.ok){
-    setStatus('off', `Archivo no encontrado (${res.status})`);
-    renderEmpty(
-      `No se encontró el archivo en la ruta:\n${DATA_PATH}\n\nCódigo de respuesta: ${res.status}\n\n`+
-      `Verifica en GitHub que el archivo esté exactamente en "devoluciones/data/reporte_devolucion_pm.xlsx", `+
-      `con ese nombre exacto (minúsculas, sin tildes ni espacios) y que el sitio de Netlify haya `+
-      `terminado de republicar (pestaña "Deploys").`
-    );
-    return;
-  }
-  let ab;
-  try{
-    ab = await res.arrayBuffer();
-  }catch(readErr){
-    setStatus('off','Error al descargar');
-    renderEmpty(`El archivo se encontró pero falló la descarga.\n\nDetalle: ${readErr.message}`);
-    return;
-  }
-  const sizeMB = (ab.byteLength/1024/1024).toFixed(1);
-  renderLoading(`Procesando ${sizeMB} MB de datos… puede tardar unos segundos`);
-  try{
-    const rows = await parseWorkbookAsync(ab);
-    if (!rows.length) throw new Error('El archivo no tiene filas de datos reconocibles, o los encabezados no coinciden con lo esperado (Fecha, Tienda, Código, Producto, Devolución, Mala producción, Total, Razón).');
-    setData(rows, 'repo');
-  }catch(parseErr){
-    setStatus('off','Error al leer el archivo');
-    renderEmpty(`El archivo se descargó (${sizeMB} MB) pero no se pudo procesar.\n\nDetalle: ${parseErr.message}`);
+    const res = await fetch(file.path + '?v=' + Date.now(), {cache:'no-store'});
+    if (!res.ok) return { file, missing:true, status:res.status };
+    const ab = await res.arrayBuffer();
+    // Cloudflare devuelve la página principal (HTML) cuando un archivo no existe: se descarta
+    if (!sniffFormat(ab)) return { file, missing:true, status:res.status };
+    return { file, ab, sizeMB:(ab.byteLength/1024/1024).toFixed(1) };
+  }catch(err){
+    return { file, error:err.message };
   }
 }
+
+async function loadFromRepo(){
+  setStatus('loading','Buscando datos…');
+  renderLoading('Buscando archivos de datos…');
+  const results = await Promise.all(DATA_FILES.map(fetchSpreadsheet));
+  const found = results.filter(r=>r.ab);
+  const netErrors = results.filter(r=>r.error);
+  if (!found.length){
+    setStatus('off', netErrors.length ? 'Error de red' : 'Sin archivos de datos');
+    renderEmpty(netErrors.length
+      ? `No se pudo conectar para descargar los archivos.\n\nDetalle: ${netErrors[0].error}`
+      : `No se encontró ningún archivo de datos en la carpeta data/.\n\nArchivos esperados (en devoluciones/data/):\n`+
+        `  • ReportInoutDetail.xls   (exporte del ERP)\n  • reporte_devolucion_pm.xlsx   (histórico, opcional)\n\n`+
+        `Verifica el nombre exacto (respeta mayúsculas) y que Cloudflare haya terminado de republicar.`);
+    return;
+  }
+  const parts = [];
+  const problems = [];
+  for (let i=0;i<found.length;i++){
+    const f = found[i];
+    renderLoading(`Procesando ${f.file.label} (${f.sizeMB} MB) — archivo ${i+1} de ${found.length}…`);
+    try{
+      const parsed = await parseWorkbookAsync(f.ab);
+      if (!parsed.rows.length) throw new Error('no se reconocieron filas de datos (revisa los encabezados del archivo)');
+      parts.push({ name:f.file.path.replace('data/',''), label:f.file.label, ...parsed });
+    }catch(err){
+      problems.push(`No se pudo leer ${f.file.path.replace('data/','')}: ${err.message}`);
+    }
+  }
+  if (!parts.length){
+    setStatus('off','Error al leer los archivos');
+    renderEmpty(problems.join('\n\n'));
+    return;
+  }
+  const merged = mergeSources(parts);
+  setData(merged.rows, 'repo', { parts, merged, problems });
+}
+
 function setStatus(kind, text){
   const dot = document.getElementById('statusDot');
   dot.className = 'status-dot ' + (kind==='ok' ? '' : kind==='loading' ? 'stale' : 'off');
   document.getElementById('statusText').textContent = text;
 }
-function setData(rows, source){
+
+function renderDataNotice(meta){
+  const el = document.getElementById('dataNotice');
+  if (!el) return;
+  const lines = [];
+  const esc = t => String(t).replace(/</g,'&lt;');
+  if (meta){
+    (meta.problems||[]).forEach(t=> lines.push(`<div><span class="n-warn">⚠ ${esc(t)}</span></div>`));
+    const gaps = detectGaps(state.raw, 3);
+    gaps.forEach(g=>{
+      lines.push(`<div><span class="n-warn">⚠ Sin datos del ${fmtDate(g.from)} al ${fmtDate(g.to)} (${g.days} días).</span> `+
+                 `Exporta ese periodo del ERP y súbelo como <b>ReportInoutDetail_2.xls</b> para completarlo.</div>`);
+    });
+    const { merged, parts } = meta;
+    if (merged && merged.erpRange){
+      let t = `ℹ Datos del ERP: ${fmtDate(merged.erpRange.min)} al ${fmtDate(merged.erpRange.max)}.`;
+      if (merged.replaced > 0) t += ` Reemplazan ${merged.replaced.toLocaleString('es-GT')} filas del histórico en esas fechas.`;
+      t += ` El ERP no registra la razón de la mala producción: en esos días aparece como “(sin razón)”.`;
+      lines.push(`<div>${t}</div>`);
+    }
+    (parts||[]).forEach(p=> (p.notes||[]).forEach(n=> lines.push(`<div>ℹ ${esc(p.name)}: ${esc(n)}</div>`)));
+  }
+  if (!lines.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = lines.join('');
+  el.style.display = 'block';
+}
+
+function setData(rows, source, meta){
   state.raw = rows;
   document.getElementById('filterbar').style.display = 'flex';
   buildFilterOptions();
   applyFilters();
-  const latest = rows.reduce((m,r)=> r.fecha && (!m || r.fecha>m) ? r.fecha : m, null);
+  renderDataNotice(meta);
+  let latest = null;
+  for (const r of rows){ if (r.fecha && (!latest || r.fecha > latest)) latest = r.fecha; }
   setStatus('ok', source==='repo'
     ? `Datos al ${latest ? fmtDate(latest) : '—'}`
     : `Cargado manualmente (${rows.length.toLocaleString('es-GT')} filas)`);
@@ -717,12 +936,13 @@ function groupByTienda(rows){
 /* ---------- Rendering ---------- */
 function renderEmpty(detail){
   document.getElementById('filterbar').style.display = 'none';
+  hideNotice();
   document.getElementById('mainArea').innerHTML = `
     <div class="panel" style="grid-column:1/-1;">
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="#6f1c1c" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
         <h3>Todavía no hay datos cargados</h3>
-        <p>Sube el archivo <strong>reporte_devolucion_pm.xlsx</strong> a la carpeta <code>data/</code> del repositorio, o cárgalo manualmente con el botón "⬆ Cargar Excel".</p>
+        <p>Sube el exporte del ERP (<strong>ReportInoutDetail.xls</strong>) a la carpeta <code>data/</code> del repositorio, o cárgalo manualmente con el botón "⬆ Cargar Excel".</p>
         ${detail ? `<pre>${detail.replace(/</g,'&lt;')}</pre>` : ''}
       </div>
     </div>`;
@@ -1095,17 +1315,29 @@ document.getElementById('weekSelect').addEventListener('change', ()=>{
 /* ---------- Manual upload ---------- */
 document.getElementById('btnUpload').addEventListener('click', ()=> document.getElementById('fileInput').click());
 document.getElementById('fileInput').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if (!file) return;
-  renderLoading(`Procesando ${(file.size/1024/1024).toFixed(1)} MB…`);
-  try{
-    const ab = await file.arrayBuffer();
-    const rows = await parseWorkbookAsync(ab);
-    if (!rows.length) throw new Error('No se encontraron filas con las columnas esperadas (Fecha, Tienda, Código, Producto, Devolución, Mala producción, Total, Razón).');
-    setData(rows, 'manual');
-  }catch(err){
+  const files = [...e.target.files];
+  if (!files.length) return;
+  const parts = [];
+  const problems = [];
+  for (let i=0;i<files.length;i++){
+    const file = files[i];
+    renderLoading(`Procesando ${file.name} (${(file.size/1024/1024).toFixed(1)} MB) — archivo ${i+1} de ${files.length}…`);
+    try{
+      const ab = await file.arrayBuffer();
+      if (!sniffFormat(ab)) throw new Error('no es un archivo de Excel (.xls o .xlsx)');
+      const parsed = await parseWorkbookAsync(ab);
+      if (!parsed.rows.length) throw new Error('no se reconocieron filas de datos (revisa los encabezados)');
+      parts.push({ name:file.name, label:file.name, ...parsed });
+    }catch(err){
+      problems.push(`No se pudo procesar "${file.name}": ${err.message}`);
+    }
+  }
+  if (!parts.length){
     setStatus('off','Error al leer el archivo');
-    renderEmpty(`No se pudo procesar "${file.name}".\n\nDetalle: ${err.message}`);
+    renderEmpty(problems.join('\n\n'));
+  } else {
+    const merged = mergeSources(parts);
+    setData(merged.rows, 'manual', { parts, merged, problems });
   }
   e.target.value = '';
 });
