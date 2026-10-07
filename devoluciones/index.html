@@ -262,6 +262,50 @@
   @media (max-width:900px){ .weekly-grid{grid-template-columns:1fr;} }
   .rank-badge.rN{background:#d9c3c3;color:var(--maroon-800);}
 
+  /* Tendencias */
+  .trend-section{margin:32px 22px 10px;padding-top:22px;border-top:2px solid var(--maroon-800);}
+  .trend-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper);}
+  .seg button{font:inherit;font-size:13px;font-weight:600;padding:5px 14px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .seg button + button{border-left:1px solid var(--line);}
+  .seg button.on{background:var(--maroon-800);color:#fff;}
+  .trend-body{padding:14px 16px 16px;}
+  .trend-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .trend-filters .filter-field{min-width:180px;flex:1;}
+  .trend-filters .filter-field input[type=text]{width:100%;}
+  .mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:12px;}
+  .mini-grid .stat-card{padding:10px 12px;box-shadow:none;}
+  .mini-grid .stat-card .value{font-size:19px;}
+  .mini-grid .stat-card .value.small{font-size:13.5px;line-height:1.5;}
+  .stat-card .cap{font-size:10.5px;color:var(--ink-soft);margin-top:3px;line-height:1.3;}
+  .trend-canvas{position:relative;height:290px;}
+  .trend-note{margin-top:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.55;}
+  .board-title{font-size:16px;font-weight:800;color:var(--maroon-800);margin:22px 0 10px;}
+  .board-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:16px;align-items:start;}
+  @media (max-width:640px){ .board-grid{grid-template-columns:1fr;} }
+  .board-scroll{max-height:480px;overflow:auto;}
+  .board-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:#faf6ec;}
+  .board-tools input{flex:1;min-width:200px;font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;outline:none;background:var(--paper);}
+  .board-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .board-table thead th{position:sticky;top:0;z-index:2;background:#3a3a3a;color:#fff;text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .board-table thead th.num{text-align:right;}
+  .board-table td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  .board-table td.name{white-space:normal;min-width:170px;}
+  .board-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .board-table tbody tr{cursor:pointer;}
+  .board-table tbody tr:nth-child(even){background:#faf6ec;}
+  .board-table tbody tr:hover{background:var(--pink);}
+  .board-table tbody tr.row-selected{background:#f3dcdc;box-shadow:inset 3px 0 0 var(--maroon-800);font-weight:700;}
+  .board-table tfoot td{position:sticky;bottom:0;background:#f4ede0;font-weight:800;border-top:2px solid var(--maroon-800);}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable::after{content:'↕';opacity:.35;margin-left:4px;font-size:10px;}
+  th.sorted-desc::after{content:'▼';opacity:1;}
+  th.sorted-asc::after{content:'▲';opacity:1;}
+  .var-up{color:var(--danger);font-weight:700;}
+  .var-down{color:var(--ok);font-weight:700;}
+  .var-flat,.var-na{color:var(--ink-soft);}
+  svg.spark{display:block;}
+  .weekly-grid > *, .board-grid > *, .trend-body, .trend-canvas{min-width:0;}   /* permite que las gráficas se encojan con la ventana */
   .data-notice{
     margin:12px 22px 0;padding:10px 14px;border-radius:8px;
     background:#fff6e0;border:1px solid #ecd49a;color:#6a4a07;font-size:13px;line-height:1.5;
@@ -343,6 +387,7 @@
     </div>
   </div>
 
+  <div class="data-notice" id="weekWarn" style="display:none;margin:0 0 12px;"></div>
   <div class="stat-grid" id="weekStats"></div>
 
   <div class="weekly-grid">
@@ -382,6 +427,112 @@
         </table>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="trend-section" id="trendSection" style="display:none;">
+  <div class="weekly-header">
+    <div class="weekly-title">📈 Tendencias
+      <span class="sub">Evolución de devolución y mala producción por tienda, por producto y para todas las tiendas</span>
+    </div>
+    <div class="trend-controls">
+      <div class="week-picker">
+        <label>Periodo</label>
+        <select id="trPeriod">
+          <option value="8s">Últimas 8 semanas</option>
+          <option value="13s">Últimas 13 semanas</option>
+          <option value="6m">Últimos 6 meses</option>
+          <option value="todo" selected>Todo el histórico</option>
+          <option value="filtro">Fechas del filtro superior</option>
+        </select>
+      </div>
+      <div class="week-picker">
+        <label>Agrupar por</label>
+        <div class="seg" id="trGran">
+          <button type="button" data-g="dia">Día</button>
+          <button type="button" data-g="semana" class="on">Semana</button>
+          <button type="button" data-g="mes">Mes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="weekly-grid">
+    <div class="panel exec-panel" id="trStorePanel">
+      <div class="exec-banner">Tendencia por tienda <span class="sub" id="trStoreSub"></span></div>
+      <div class="trend-body">
+        <div class="trend-filters">
+          <div class="filter-field"><label>Tienda</label><select id="trStore"></select></div>
+        </div>
+        <div class="mini-grid" id="trStoreStats"></div>
+        <div class="trend-canvas"><canvas id="chartTrStore"></canvas></div>
+        <div class="trend-note" id="trStoreNote"></div>
+      </div>
+    </div>
+
+    <div class="panel exec-panel" id="trProdPanel">
+      <div class="exec-banner">Tendencia por producto <span class="sub" id="trProdSub"></span></div>
+      <div class="trend-body">
+        <div class="trend-filters">
+          <div class="filter-field" style="flex:2;"><label>Producto (escribe código o nombre)</label>
+            <input type="text" id="trProdInput" list="trProdList" autocomplete="off" placeholder="Ej.: 220 FRANCES PEQUENO 18" />
+            <datalist id="trProdList"></datalist></div>
+          <div class="filter-field"><label>Tienda</label><select id="trProdStore"></select></div>
+        </div>
+        <div class="mini-grid" id="trProdStats"></div>
+        <div class="trend-canvas"><canvas id="chartTrProd"></canvas></div>
+        <div class="trend-note" id="trProdNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-title">Tablero de tendencias — todas las tiendas y todos los productos</div>
+  <div class="board-grid">
+    <div class="panel exec-panel">
+      <div class="exec-banner">Tiendas <span class="sub" id="trBoardStoresSub"></span></div>
+      <div class="board-scroll">
+        <table class="board-table" id="tblBoardStores">
+          <thead><tr>
+            <th class="sortable" data-sort="name">Tienda</th>
+            <th class="sortable num" data-sort="dev">Devolución</th>
+            <th class="sortable num" data-sort="mp">Mala prod.</th>
+            <th class="sortable num" data-sort="pmp">% MP</th>
+            <th>Tendencia</th>
+            <th class="sortable num" data-sort="vdev">Δ Dev.</th>
+            <th class="sortable num" data-sort="vmp">Δ MP</th>
+          </tr></thead>
+          <tbody id="trBoardStores"></tbody>
+          <tfoot id="trBoardStoresFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="panel exec-panel">
+      <div class="exec-banner"><span id="trBoardProductsTitle">Productos</span> <span class="sub" id="trBoardProductsSub"></span></div>
+      <div class="board-tools">
+        <input type="text" id="trProdSearch" placeholder="Buscar producto o código…" autocomplete="off" />
+        <button type="button" class="btn ghost" id="trBoardClear" style="display:none;padding:5px 10px;font-size:12px;">✕ Quitar tienda seleccionada</button>
+      </div>
+      <div class="board-scroll">
+        <table class="board-table" id="tblBoardProducts">
+          <thead><tr>
+            <th class="sortable" data-sort="name">Producto</th>
+            <th class="sortable num" data-sort="dev">Devolución</th>
+            <th class="sortable num" data-sort="mp">Mala prod.</th>
+            <th class="sortable num" data-sort="pmp">% MP</th>
+            <th>Tendencia</th>
+            <th class="sortable num" data-sort="vdev">Δ Dev.</th>
+            <th class="sortable num" data-sort="vmp">Δ MP</th>
+          </tr></thead>
+          <tbody id="trBoardProducts"></tbody>
+          <tfoot id="trBoardProductsFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="trend-note" style="margin-top:12px;">
+    <b>Cómo leerlo:</b> en las mini gráficas la línea <span style="color:#6f1c1c;font-weight:700;">guinda</span> es devolución y la <span style="color:#c8920a;font-weight:700;">dorada</span> mala producción, cada una a su propia escala (muestran la forma, no la magnitud).
+    Δ compara las últimas semanas/días/meses completos contra el mismo número de periodos anteriores: <span class="var-up">▲ rojo = aumento</span>, <span class="var-down">▼ verde = disminución</span>.
+    Cifras tomadas de las columnas Devolución y Mala producción.
   </div>
 </section>
 
@@ -640,6 +791,296 @@ function sniffFormat(ab){
 }
 /* ==== PURE-END ==== */
 
+/* ==== TREND-START (pruebas automáticas en Node) ==== */
+const TREND_COLORS = { dev:'#6f1c1c', mp:'#c8920a', devFill:'rgba(111,28,28,.08)' };
+const MES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const TREND_N_MAX = { dia:7, semana:4, mes:3 };
+const GRAN_LABEL  = { dia:'día', semana:'semana', mes:'mes' };
+const GRAN_PLURAL = { dia:'días', semana:'semanas', mes:'meses' };
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sumArr(a){ let s = 0; for (let i=0;i<a.length;i++) s += a[i]; return s; }
+
+function dayNumber(d){ return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+function weekStartDn(dn){ return dn - ((dn + 3) % 7); }            // lunes de esa semana
+function dnToDate(dn){ const u = new Date(dn*86400000); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); }
+function monthKeyOfDn(dn){ const u = new Date(dn*86400000); return u.getUTCFullYear()*12 + u.getUTCMonth(); }
+function monthStartDn(mk){ return Math.floor(Date.UTC(Math.floor(mk/12), mk%12, 1) / 86400000); }
+function monthEndDn(mk){ return Math.floor(Date.UTC(Math.floor(mk/12), mk%12 + 1, 1) / 86400000) - 1; }
+function isoWeekOfDn(dn){
+  const thu = weekStartDn(dn) + 3;
+  const y = new Date(thu*86400000).getUTCFullYear();
+  const jan1 = Math.floor(Date.UTC(y, 0, 1) / 86400000);
+  return Math.floor((thu - jan1) / 7) + 1;
+}
+function fmtDnDM(dn){ const d = dnToDate(dn); return pad2(d.getDate()) + '/' + pad2(d.getMonth()+1); }
+function fmtDnDMY(dn){ const d = dnToDate(dn); return pad2(d.getDate()) + '/' + pad2(d.getMonth()+1) + '/' + d.getFullYear(); }
+
+/* Marca cada fila con su día (dn) y mes (mk) y calcula qué días tienen cobertura de datos.
+   Un tramo de >= 3 días seguidos sin ningún dato se considera hueco; los días sueltos
+   (feriados) NO se consideran faltantes. */
+function prepareCoverage(rows){
+  let minDn = Infinity, maxDn = -Infinity;
+  const seen = new Set();
+  for (const r of rows){
+    if (!r.fecha){ r.dn = null; continue; }
+    const dn = dayNumber(r.fecha);
+    r.dn = dn;
+    r.mk = r.fecha.getFullYear()*12 + r.fecha.getMonth();
+    seen.add(dn);
+    if (dn < minDn) minDn = dn;
+    if (dn > maxDn) maxDn = dn;
+  }
+  if (!isFinite(minDn)) return null;
+  const gap = new Uint8Array(maxDn - minDn + 1);
+  let runStart = -1;
+  for (let d = minDn; d <= maxDn + 1; d++){
+    const miss = d <= maxDn && !seen.has(d);
+    if (miss && runStart < 0) runStart = d;
+    if (!miss && runStart >= 0){
+      if (d - runStart >= 3) for (let x = runStart; x < d; x++) gap[x - minDn] = 1;
+      runStart = -1;
+    }
+  }
+  return { minDn, maxDn, gap };
+}
+
+function resolvePeriod(cov, preset, gran, custom){
+  let from, to = cov.maxDn, exact = false;
+  if (preset === 'filtro' && custom){
+    from = custom.fromDn != null ? custom.fromDn : cov.minDn;
+    to   = custom.toDn   != null ? custom.toDn   : cov.maxDn;
+    exact = true;
+  } else if (preset === '8s')  from = weekStartDn(cov.maxDn) - 7*7;
+  else if (preset === '13s')   from = weekStartDn(cov.maxDn) - 12*7;
+  else if (preset === '6m')    from = monthStartDn(monthKeyOfDn(cov.maxDn) - 5);
+  else                         from = cov.minDn;
+  from = Math.max(from, cov.minDn);
+  to = Math.min(to, cov.maxDn);
+  if (from > to) return null;
+  if (!exact){
+    if (gran === 'semana') from = weekStartDn(from);
+    else if (gran === 'mes') from = monthStartDn(monthKeyOfDn(from));
+  }
+  return { fromDn: from, toDn: to };
+}
+
+function yearOfDn(dn){ return new Date(dn*86400000).getUTCFullYear(); }
+function bucketLabel(gran, b, multiYear){
+  if (gran === 'mes'){ const mk = b.key; return MES_ABBR[mk % 12] + ' ' + String(Math.floor(mk/12)).slice(2); }
+  return fmtDnDM(b.start) + (multiYear ? '/' + String(yearOfDn(b.start)).slice(2) : '');
+}
+function bucketTitle(gran, b){
+  if (gran === 'dia') return fmtDnDMY(b.start);
+  if (gran === 'semana') return 'Semana ' + isoWeekOfDn(b.start) + ' (' + fmtDnDM(b.start) + ' – ' + fmtDnDMY(b.end) + ')';
+  return MES_FULL[b.key % 12] + ' ' + Math.floor(b.key/12);
+}
+
+function makeBuckets(cov, gran, fromDn, toDn){
+  const buckets = [];
+  if (gran === 'dia'){
+    for (let d = fromDn; d <= toDn; d++) buckets.push({ start:d, end:d, key:d });
+  } else if (gran === 'semana'){
+    for (let s = weekStartDn(fromDn); s <= toDn; s += 7) buckets.push({ start:s, end:s+6, key:s });
+  } else {
+    for (let mk = monthKeyOfDn(fromDn); mk <= monthKeyOfDn(toDn); mk++)
+      buckets.push({ start:monthStartDn(mk), end:monthEndDn(mk), key:mk });
+  }
+  for (const b of buckets){
+    b.days = b.end - b.start + 1;
+    let covered = 0;
+    for (let d = b.start; d <= b.end; d++){
+      if (d >= fromDn && d <= toDn && d >= cov.minDn && d <= cov.maxDn && !cov.gap[d - cov.minDn]) covered++;
+    }
+    b.covered = covered;
+    b.hasData = covered > 0;
+    b.partial = covered > 0 && covered < b.days;
+    b.missing = b.days - covered;
+    b.label = bucketLabel(gran, b, yearOfDn(fromDn) !== yearOfDn(toDn));
+    b.title = bucketTitle(gran, b);
+  }
+  return buckets;
+}
+
+function makeIndexer(gran, buckets, fromDn, toDn){
+  const first = buckets[0].key;
+  if (gran === 'dia')    return r => { const dn = r.dn; return (dn == null || dn < fromDn || dn > toDn) ? -1 : dn - first; };
+  if (gran === 'semana') return r => { const dn = r.dn; return (dn == null || dn < fromDn || dn > toDn) ? -1 : (weekStartDn(dn) - first) / 7; };
+  return r => { const dn = r.dn; return (dn == null || dn < fromDn || dn > toDn) ? -1 : r.mk - first; };
+}
+
+function aggregateSeries(rows, idx, n, pred){
+  const dev = new Float64Array(n), mp = new Float64Array(n);
+  for (const r of rows){
+    if (r.dn == null) continue;
+    if (pred && !pred(r)) continue;
+    const i = idx(r);
+    if (i < 0) continue;
+    dev[i] += r.devolucion; mp[i] += r.malaProduccion;
+  }
+  return { dev, mp };
+}
+function aggregateGroups(rows, idx, n, keyFn, pred, nameFn){
+  const map = new Map();
+  for (const r of rows){
+    if (r.dn == null) continue;
+    if (pred && !pred(r)) continue;
+    const i = idx(r);
+    if (i < 0) continue;
+    const k = keyFn(r);
+    let g = map.get(k);
+    if (!g){
+      g = { key:k, name: nameFn ? nameFn(r) : k, dev:new Float64Array(n), mp:new Float64Array(n) };
+      map.set(k, g);
+    }
+    g.dev[i] += r.devolucion; g.mp[i] += r.malaProduccion;
+  }
+  return map;
+}
+
+/* Ventanas para la variación: las últimas N semanas/días/meses COMPLETOS y CONSECUTIVOS
+   contra las N anteriores. Nunca compara a través de un hueco ni usa periodos incompletos. */
+function trailingWindows(buckets, gran){
+  const ok = i => buckets[i].hasData && !buckets[i].partial;
+  let end = buckets.length - 1;
+  if (end >= 0 && buckets[end].hasData && buckets[end].partial) end--;   // el periodo en curso (incompleto) se omite
+  if (end < 0 || !ok(end)) return null;                                  // si no, la comparación sería con datos viejos
+  let start = end;
+  while (start - 1 >= 0 && ok(start - 1)) start--;
+  const N = Math.min(TREND_N_MAX[gran], Math.floor((end - start + 1) / 2));
+  if (N < (gran === 'dia' ? 3 : 2)) return null;
+  const last = [], prev = [];
+  for (let i = end - N + 1; i <= end; i++) last.push(i);
+  for (let i = end - 2*N + 1; i <= end - N; i++) prev.push(i);
+  return { N, last, prev, gran };
+}
+function windowChange(arr, win){
+  if (!win) return null;
+  let a = 0, b = 0;
+  for (const i of win.prev) a += arr[i];
+  for (const i of win.last) b += arr[i];
+  return { prev:a, curr:b, pct: a === 0 ? (b === 0 ? 0 : null) : (b - a) / a * 100 };
+}
+function describeChange(ch){
+  if (!ch) return { text:'—', cls:'var-na', value:null };
+  if (ch.pct === null) return { text:'▲ nuevo', cls:'var-up', value:Infinity };
+  const p = ch.pct;
+  if (Math.abs(p) < 0.05) return { text:'= 0,0 %', cls:'var-flat', value:0 };
+  const s = Math.abs(p).toFixed(1).replace('.', ',');
+  return p > 0 ? { text:'▲ +' + s + ' %', cls:'var-up', value:p }
+               : { text:'▼ −' + s + ' %', cls:'var-down', value:p };
+}
+
+/* Mini gráfica (SVG) con las dos series, cada una a su propia escala; deja huecos donde no hay datos */
+function sparkSvg(series, buckets, opts){
+  const w = (opts && opts.w) || 110, h = (opts && opts.h) || 28, pad = 3;
+  const n = buckets.length;
+  const xAt = i => n <= 1 ? w/2 : pad + (w - 2*pad) * i / (n - 1);
+  const draw = (arr, color) => {
+    let max = 0;
+    for (let i = 0; i < n; i++) if (buckets[i].hasData && arr[i] > max) max = arr[i];
+    const yAt = v => max === 0 ? h - pad : (h - pad) - (h - 2*pad) * v / max;
+    let d = '', dots = '', seg = 0, lastX = 0, lastY = 0;
+    const closeSeg = () => { if (seg === 1) dots += '<circle cx="' + lastX + '" cy="' + lastY + '" r="1.4" fill="' + color + '"/>'; seg = 0; };
+    for (let i = 0; i < n; i++){
+      if (!buckets[i].hasData){ closeSeg(); continue; }
+      const x = xAt(i).toFixed(1), y = yAt(arr[i]).toFixed(1);
+      d += (seg === 0 ? 'M' : 'L') + x + ' ' + y;
+      seg++; lastX = x; lastY = y;
+    }
+    closeSeg();
+    return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>' + dots;
+  };
+  return '<svg class="spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Tendencia">' +
+         draw(series.dev, TREND_COLORS.dev) + draw(series.mp, TREND_COLORS.mp) + '</svg>';
+}
+
+/* Configuración de Chart.js (doble eje: devolución a la izquierda, mala producción a la derecha) */
+function buildTrendConfig(buckets, series, fmt){
+  const n = buckets.length;
+  const partial = buckets.map(b => b.partial);
+  const dev = [], mp = [];
+  for (let i = 0; i < n; i++){
+    if (!buckets[i].hasData){ dev.push(null); mp.push(null); }
+    else { dev.push(series.dev[i]); mp.push(series.mp[i]); }
+  }
+  const dash = ctx => (partial[ctx.p0DataIndex] || partial[ctx.p1DataIndex]) ? [5, 4] : undefined;
+  const base = (color) => ({
+    borderColor: color, borderWidth: 2, tension: 0.2, spanGaps: false,
+    pointRadius: n <= 80 ? 3 : 0, pointHoverRadius: 5, pointBorderWidth: 2, pointBorderColor: color,
+    pointBackgroundColor: ctx => partial[ctx.dataIndex] ? '#ffffff' : color,
+    segment: { borderDash: dash }
+  });
+  return {
+    type: 'line',
+    data: {
+      labels: buckets.map(b => b.label),
+      datasets: [
+        Object.assign(base(TREND_COLORS.dev), { label:'Devolución', data:dev, yAxisID:'y',  backgroundColor:TREND_COLORS.devFill, fill:true }),
+        Object.assign(base(TREND_COLORS.mp),  { label:'Mala producción', data:mp, yAxisID:'y1', fill:false })
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:12, font:{ size:11 } } },
+        tooltip: { callbacks: {
+          title: items => buckets[items[0].dataIndex].title,
+          label: item => item.dataset.label + ': ' + fmt(item.parsed.y),
+          afterBody: items => {
+            const b = buckets[items[0].dataIndex];
+            return b.partial ? ['⚠ Periodo incompleto: faltan datos de ' + b.missing + (b.missing === 1 ? ' día' : ' días')] : [];
+          }
+        } }
+      },
+      scales: {
+        x:  { grid:{ display:false }, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:12, font:{ size:10 } } },
+        y:  { position:'left',  beginAtZero:true, grid:{ color:'#f0e8d8' },
+              title:{ display:true, text:'Devolución (unid.)', color:TREND_COLORS.dev, font:{ size:11 } }, ticks:{ color:TREND_COLORS.dev } },
+        y1: { position:'right', beginAtZero:true, grid:{ drawOnChartArea:false },
+              title:{ display:true, text:'Mala producción (unid.)', color:'#8a6200', font:{ size:11 } }, ticks:{ color:'#8a6200' } }
+      }
+    }
+  };
+}
+
+function buildBoardRows(groups, win){
+  const rows = [];
+  for (const g of groups.values()){
+    const dev = sumArr(g.dev), mp = sumArr(g.mp), total = dev + mp;
+    if (total <= 0) continue;
+    rows.push({
+      key:g.key, name:g.name, dev, mp, total, pmp: mp / total * 100,
+      cd: describeChange(windowChange(g.dev, win)),
+      cm: describeChange(windowChange(g.mp, win)),
+      series: g
+    });
+  }
+  return rows;
+}
+function boardLabel(row, kind){ return kind === 'prod' ? row.key + ' ' + row.name : row.name; }
+function sortBoardRows(rows, st, kind){
+  const val = r => {
+    switch (st.key){
+      case 'name': return boardLabel(r, kind).toLowerCase();
+      case 'vdev': return r.cd.value == null ? -Infinity : r.cd.value;
+      case 'vmp':  return r.cm.value == null ? -Infinity : r.cm.value;
+      default: return r[st.key];
+    }
+  };
+  rows.sort((a, b) => {
+    const x = val(a), y = val(b);
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * st.dir : boardLabel(a, kind).localeCompare(boardLabel(b, kind));
+  });
+  return rows;
+}
+/* ==== TREND-END ==== */
+
+
 /* Parse using a Web Worker so large files (100k+ rows) don't freeze the UI.
    Falls back to main-thread parsing if workers aren't available. */
 let _workerUrl = null;
@@ -714,6 +1155,8 @@ const DATA_FILES = [
 function hideNotice(){
   const n = document.getElementById('dataNotice');
   if (n){ n.style.display = 'none'; n.innerHTML = ''; }
+  // mientras se carga o si no hay datos, las secciones de análisis también se ocultan
+  ['weeklySection','trendSection'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
 }
 function renderLoading(msg){
   document.getElementById('filterbar').style.display = 'none';
@@ -815,6 +1258,7 @@ function setData(rows, source, meta){
   document.getElementById('filterbar').style.display = 'flex';
   buildFilterOptions();
   applyFilters();
+  initTrendSection();
   renderDataNotice(meta);
   let latest = null;
   for (const r of rows){ if (r.fecha && (!latest || r.fecha > latest)) latest = r.fecha; }
@@ -1179,6 +1623,7 @@ function renderAll(){
   renderTiendaRanking();
   renderMotivos();
   renderWeeklySection();
+  if (typeof trend !== 'undefined' && trend.ready && trend.period === 'filtro') renderTrendAll();
   const {desde, hasta} = getFilters();
   document.getElementById('rangeLabel').textContent = desde && hasta ? `${fmtDate(desde)} – ${fmtDate(hasta)}` : '';
 }
@@ -1257,6 +1702,15 @@ function renderWeekData(weekObj){
     <div class="stat-card"><div class="label">% Devolución</div><div class="value small">${fmtPct(pDev)}</div></div>
     <div class="stat-card"><div class="label">% Mala Producción</div><div class="value small">${fmtPct(pMp)}</div></div>
   `;
+  const blankRazon = rows.filter(r => !String(r.razon || '').trim()).length;
+  const blankShare = rows.length ? blankRazon / rows.length : 0;
+  const warnEl = document.getElementById('weekWarn');
+  if (blankShare > 0.5){
+    warnEl.innerHTML = `<span class="n-warn">⚠ En esta semana la columna <b>Razón</b> está vacía en el ${(blankShare*100).toFixed(0)} % de las filas.</span> ` +
+      `Este bloque separa devolución y mala producción usando esa columna, por lo que sus cifras no son confiables para este periodo. ` +
+      `Para esta semana consulta la sección <b>Tendencias</b> (más abajo), que usa las columnas Devolución y Mala producción.`;
+    warnEl.style.display = 'block';
+  } else { warnEl.style.display = 'none'; warnEl.innerHTML = ''; }
   document.getElementById('weekLabelDev').textContent = rangeLabel;
   document.getElementById('weekLabelMp').textContent = rangeLabel;
 
@@ -1311,6 +1765,246 @@ document.getElementById('weekSelect').addEventListener('change', ()=>{
   const w = weeks.find(w=>w.key === document.getElementById('weekSelect').value);
   renderWeekData(w);
 });
+
+/* ---------- Tendencias: por tienda, por producto y tablero de todas las tiendas ---------- */
+const trend = {
+  ready:false, cov:null, ctx:null,
+  period:'todo', gran:'semana',
+  store:'', prod:'', prodStore:'', prodSearch:'',
+  labelByCode:new Map(), codeByLabel:new Map(),
+  storeRows:[], prodRows:[],
+  sortStores:{ key:'total', dir:-1 }, sortProds:{ key:'total', dir:-1 }
+};
+
+function topFilterDnRange(){
+  const f = getFilters();
+  return { fromDn: f.desde ? dayNumber(f.desde) : null, toDn: f.hasta ? dayNumber(f.hasta) : null };
+}
+
+function initTrendSection(){
+  const sec = document.getElementById('trendSection');
+  const cov = prepareCoverage(state.raw);
+  if (!cov){ sec.style.display = 'none'; trend.ready = false; return; }
+  trend.cov = cov;
+
+  // Catálogos (tiendas y productos ordenados por volumen)
+  const byStore = new Map(), byProd = new Map();
+  for (const r of state.raw){
+    if (r.dn == null) continue;
+    if (r.tienda) byStore.set(r.tienda, (byStore.get(r.tienda)||0) + r.total);
+    if (r.codigo){
+      let p = byProd.get(r.codigo);
+      if (!p){ p = { code:r.codigo, name:r.producto, total:0 }; byProd.set(r.codigo, p); }
+      p.total += r.total;
+    }
+  }
+  const stores = [...byStore.keys()].sort((a,b)=>a.localeCompare(b));
+  const prods = [...byProd.values()].sort((a,b)=>b.total - a.total);
+  trend.labelByCode = new Map(prods.map(p => [p.code, p.code + ' ' + p.name]));
+  trend.codeByLabel = new Map(prods.map(p => [normKey(p.code + ' ' + p.name), p.code]));
+
+  trend.store = ''; trend.prodStore = ''; trend.prodSearch = '';
+  trend.prod = prods.length ? prods[0].code : '';
+  trend.period = 'todo'; trend.gran = 'semana';
+
+  const storeOpts = '<option value="">Todas las tiendas</option>' + stores.map(s => `<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
+  document.getElementById('trStore').innerHTML = storeOpts;
+  document.getElementById('trProdStore').innerHTML = storeOpts;
+  document.getElementById('trProdList').innerHTML = prods.map(p => `<option value="${escHtml(p.code + ' ' + p.name)}"></option>`).join('');
+  document.getElementById('trProdInput').value = trend.prod ? trend.labelByCode.get(trend.prod) : '';
+  document.getElementById('trProdSearch').value = '';
+  document.getElementById('trPeriod').value = trend.period;
+  document.querySelectorAll('#trGran button').forEach(b => b.classList.toggle('on', b.dataset.g === trend.gran));
+
+  sec.style.display = 'block';
+  trend.ready = true;
+  renderTrendAll();
+}
+
+function renderTrendAll(){
+  if (!trend.ready) return;
+  const custom = trend.period === 'filtro' ? topFilterDnRange() : null;
+  const per = resolvePeriod(trend.cov, trend.period, trend.gran, custom);
+  if (!per){
+    trend.ctx = null;
+    ['trStoreStats','trProdStats'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+    ['trStoreNote','trProdNote'].forEach(id => { document.getElementById(id).textContent = 'No hay datos en el rango de fechas seleccionado.'; });
+    ['trStore','trProd'].forEach(k => { if (state.charts[k]){ state.charts[k].destroy(); state.charts[k] = null; } });
+    document.getElementById('trBoardStores').innerHTML = '';
+    document.getElementById('trBoardProducts').innerHTML = '';
+    return;
+  }
+  const buckets = makeBuckets(trend.cov, trend.gran, per.fromDn, per.toDn);
+  const idx = makeIndexer(trend.gran, buckets, per.fromDn, per.toDn);
+  const win = trailingWindows(buckets, trend.gran);
+  const a = Math.max(buckets[0].start, trend.cov.minDn), z = Math.min(buckets[buckets.length-1].end, trend.cov.maxDn);
+  trend.ctx = { per, buckets, idx, win, rangeLabel: fmtDnDMY(a) + ' al ' + fmtDnDMY(z) };
+  renderTrendStore();
+  renderTrendProduct();
+  renderBoard();
+}
+
+function trendStatsHtml(series, win, gran){
+  const dev = sumArr(series.dev), mp = sumArr(series.mp), tot = dev + mp;
+  const cd = describeChange(windowChange(series.dev, win));
+  const cm = describeChange(windowChange(series.mp, win));
+  const cap = win ? `últimas ${win.N} ${GRAN_PLURAL[gran]} vs ${win.N} anteriores` : 'sin periodos completos suficientes para comparar';
+  return `
+    <div class="stat-card"><div class="label">Devolución</div><div class="value">${fmtInt(dev)}</div></div>
+    <div class="stat-card"><div class="label">Mala producción</div><div class="value">${fmtInt(mp)}</div></div>
+    <div class="stat-card"><div class="label">% mala producción</div><div class="value">${fmtPct(pct(mp, tot))}</div></div>
+    <div class="stat-card"><div class="label">Tendencia</div>
+      <div class="value small"><span class="${cd.cls}" title="Devolución">Dev ${cd.text}</span><br><span class="${cm.cls}" title="Mala producción">MP ${cm.text}</span></div>
+      <div class="cap">${cap}</div></div>`;
+}
+function trendNoteHtml(buckets){
+  const parts = [];
+  if (buckets.some(b => b.partial)) parts.push('Punto hueco y línea punteada = periodo con datos incompletos.');
+  if (buckets.some(b => !b.hasData)) parts.push('Los tramos sin línea son fechas sin datos cargados.');
+  parts.push('Eje izquierdo: devolución · eje derecho: mala producción (escalas distintas para ver la forma de ambas tendencias).');
+  return parts.join(' ');
+}
+function drawTrendChart(key, canvasId, buckets, series){
+  if (state.charts[key]) state.charts[key].destroy();
+  state.charts[key] = new Chart(document.getElementById(canvasId), buildTrendConfig(buckets, series, fmtInt));
+}
+
+function renderTrendStore(){
+  const c = trend.ctx; if (!c) return;
+  const st = trend.store;
+  const series = aggregateSeries(state.raw, c.idx, c.buckets.length, st ? (r => r.tienda === st) : null);
+  document.getElementById('trStoreStats').innerHTML = trendStatsHtml(series, c.win, trend.gran);
+  document.getElementById('trStoreSub').textContent = `${st || 'Todas las tiendas'} · ${c.rangeLabel} · por ${GRAN_LABEL[trend.gran]}`;
+  document.getElementById('trStoreNote').textContent = trendNoteHtml(c.buckets);
+  drawTrendChart('trStore', 'chartTrStore', c.buckets, series);
+}
+function renderTrendProduct(){
+  const c = trend.ctx; if (!c) return;
+  const code = trend.prod, st = trend.prodStore;
+  if (!code){ document.getElementById('trProdStats').innerHTML = ''; return; }
+  const series = aggregateSeries(state.raw, c.idx, c.buckets.length, r => r.codigo === code && (!st || r.tienda === st));
+  document.getElementById('trProdStats').innerHTML = trendStatsHtml(series, c.win, trend.gran);
+  document.getElementById('trProdSub').textContent = `${trend.labelByCode.get(code) || code} · ${st || 'Todas las tiendas'} · ${c.rangeLabel}`;
+  document.getElementById('trProdNote').textContent = trendNoteHtml(c.buckets);
+  drawTrendChart('trProd', 'chartTrProd', c.buckets, series);
+}
+
+function boardRowHtml(r, i, kind, buckets, selected){
+  const label = kind === 'prod' ? `${escHtml(r.key)} ${escHtml(r.name)}` : escHtml(r.name);
+  return `<tr data-i="${i}" class="${selected ? 'row-selected' : ''}">
+    <td class="name">${label}</td>
+    <td class="num">${fmtInt(r.dev)}</td>
+    <td class="num">${fmtInt(r.mp)}</td>
+    <td class="num">${fmtPct(r.pmp)}</td>
+    <td class="spark-cell">${sparkSvg(r.series, buckets)}</td>
+    <td class="num ${r.cd.cls}">${r.cd.text}</td>
+    <td class="num ${r.cm.cls}">${r.cm.text}</td></tr>`;
+}
+function boardFootHtml(rows){
+  let dev = 0, mp = 0;
+  for (const r of rows){ dev += r.dev; mp += r.mp; }
+  return `<tr><td>Total (${fmtInt(rows.length)})</td><td class="num">${fmtInt(dev)}</td><td class="num">${fmtInt(mp)}</td>
+    <td class="num">${fmtPct(pct(mp, dev + mp))}</td><td></td><td></td><td></td></tr>`;
+}
+function markSortHeaders(tableId, st){
+  document.querySelectorAll(`#${tableId} th.sortable`).forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.sort === st.key) th.classList.add(st.dir > 0 ? 'sorted-asc' : 'sorted-desc');
+  });
+}
+
+function renderBoard(){
+  const c = trend.ctx; if (!c) return;
+  const n = c.buckets.length;
+
+  // Tiendas
+  const sg = aggregateGroups(state.raw, c.idx, n, r => r.tienda || '(sin tienda)');
+  trend.storeRows = sortBoardRows(buildBoardRows(sg, c.win), trend.sortStores, 'store');
+  document.getElementById('trBoardStores').innerHTML =
+    trend.storeRows.map((r, i) => boardRowHtml(r, i, 'store', c.buckets, r.key === trend.store)).join('');
+  document.getElementById('trBoardStoresFoot').innerHTML = boardFootHtml(trend.storeRows);
+  markSortHeaders('tblBoardStores', trend.sortStores);
+
+  // Productos (de la tienda seleccionada, o de todas)
+  const st = trend.store;
+  const pg = aggregateGroups(state.raw, c.idx, n, r => r.codigo || '(sin código)', st ? (r => r.tienda === st) : null, r => r.producto);
+  let prows = buildBoardRows(pg, c.win);
+  const q = normKey(trend.prodSearch);
+  if (q) prows = prows.filter(r => normKey(boardLabel(r, 'prod')).includes(q));
+  trend.prodRows = sortBoardRows(prows, trend.sortProds, 'prod');
+  document.getElementById('trBoardProducts').innerHTML =
+    trend.prodRows.map((r, i) => boardRowHtml(r, i, 'prod', c.buckets, r.key === trend.prod && (trend.prodStore === st))).join('');
+  document.getElementById('trBoardProductsFoot').innerHTML = boardFootHtml(trend.prodRows);
+  markSortHeaders('tblBoardProducts', trend.sortProds);
+
+  document.getElementById('trBoardStoresSub').textContent =
+    `${fmtInt(trend.storeRows.length)} tiendas · ${c.rangeLabel} · clic en una tienda para ver sus productos`;
+  document.getElementById('trBoardProductsTitle').textContent =
+    `Productos devueltos y reportados como mala producción — ${st || 'todas las tiendas'}`;
+  document.getElementById('trBoardProductsSub').textContent =
+    `${fmtInt(trend.prodRows.length)} productos${q ? ' (filtrados)' : ''} · clic en un producto para graficarlo arriba`;
+  const clr = document.getElementById('trBoardClear');
+  clr.style.display = st ? 'inline-block' : 'none';
+}
+
+/* ----- eventos ----- */
+document.getElementById('trPeriod').addEventListener('change', e => { trend.period = e.target.value; renderTrendAll(); });
+document.getElementById('trGran').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  trend.gran = b.dataset.g;
+  document.querySelectorAll('#trGran button').forEach(x => x.classList.toggle('on', x === b));
+  renderTrendAll();
+});
+document.getElementById('trStore').addEventListener('change', e => {
+  trend.store = e.target.value; renderTrendStore(); renderBoard();
+});
+document.getElementById('trProdStore').addEventListener('change', e => {
+  trend.prodStore = e.target.value; renderTrendProduct(); renderBoard();
+});
+(function(){
+  const inp = document.getElementById('trProdInput');
+  const apply = () => {
+    const code = trend.codeByLabel.get(normKey(inp.value));
+    if (code && code !== trend.prod){ trend.prod = code; renderTrendProduct(); renderBoard(); }
+    return !!code;
+  };
+  inp.addEventListener('focus', () => inp.select());
+  inp.addEventListener('input', apply);
+  inp.addEventListener('change', apply);
+  inp.addEventListener('blur', () => { if (!apply()) inp.value = trend.labelByCode.get(trend.prod) || ''; });
+})();
+document.getElementById('trProdSearch').addEventListener('input', e => { trend.prodSearch = e.target.value; renderBoard(); });
+document.getElementById('trBoardClear').addEventListener('click', () => {
+  trend.store = ''; document.getElementById('trStore').value = ''; renderTrendStore(); renderBoard();
+});
+document.getElementById('trBoardStores').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+  const row = trend.storeRows[Number(tr.dataset.i)]; if (!row) return;
+  trend.store = (trend.store === row.key) ? '' : row.key;     // un segundo clic quita la selección
+  document.getElementById('trStore').value = trend.store;
+  renderTrendStore(); renderBoard();
+});
+document.getElementById('trBoardProducts').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+  const row = trend.prodRows[Number(tr.dataset.i)]; if (!row) return;
+  trend.prod = row.key;
+  trend.prodStore = trend.store;                               // grafica el producto en la tienda enfocada (o en todas)
+  document.getElementById('trProdInput').value = trend.labelByCode.get(row.key) || row.key;
+  document.getElementById('trProdStore').value = trend.prodStore;
+  renderTrendProduct(); renderBoard();
+  const panel = document.getElementById('trProdPanel');
+  if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior:'smooth', block:'center' });
+});
+function bindSort(tableId, stKey, kindRowsFn){
+  document.getElementById(tableId).addEventListener('click', e => {
+    const th = e.target.closest('th.sortable'); if (!th) return;
+    const st = trend[stKey], k = th.dataset.sort;
+    if (st.key === k) st.dir = -st.dir; else { st.key = k; st.dir = (k === 'name') ? 1 : -1; }
+    renderBoard();
+  });
+}
+bindSort('tblBoardStores', 'sortStores');
+bindSort('tblBoardProducts', 'sortProds');
 
 /* ---------- Manual upload ---------- */
 document.getElementById('btnUpload').addEventListener('click', ()=> document.getElementById('fileInput').click());
