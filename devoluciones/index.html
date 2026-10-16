@@ -704,6 +704,7 @@ function parseErpRows(rows){
     if (!tipo || etapa === 'totales') continue;              // fila de totales o vacía
     const fecha = parseDateDMY(r[c.fecha]);
     if (!fecha){ sinFecha++; continue; }
+    if (tipo.includes('ajuste')) continue;                   // ajustes de inventario (no son devolución real)
     const isMp = tipo.includes('mala produccion');
     const isDev = tipo.includes('devolucion');
     if (!isMp && !isDev){ tiposRaros.add(String(r[c.tipo]).trim()); continue; }
@@ -1149,7 +1150,8 @@ const DATA_FILES = [
   { path:'data/ReportInoutDetail_2.xls',     label:'ERP (2)' },
   { path:'data/ReportInoutDetail_3.xls',     label:'ERP (3)' },
   { path:'data/ReportInoutDetail_4.xls',     label:'ERP (4)' },
-  { path:'data/ReportInoutDetail_5.xls',     label:'ERP (5)' }
+  { path:'data/ReportInoutDetail_5.xls',     label:'ERP (5)' },
+  { path:'data/ReportInoutDetail_2.xlsx',    label:'ERP actualizado (xlsx)' }
 ];
 
 function hideNotice(){
