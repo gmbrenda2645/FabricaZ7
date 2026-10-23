@@ -1147,12 +1147,13 @@ function parseWorkbookAsync(ab){
 const DATA_FILES = [
   { path:'data/reporte_devolucion_pm.xlsx',  label:'Histórico (formato anterior)' },
   { path:'data/ReportInoutDetail.xls',       label:'ERP' },
-  { path:'data/ReportInoutDetail_2.xls',     label:'ERP (2)' },
-  { path:'data/ReportInoutDetail_3.xls',     label:'ERP (3)' },
-  { path:'data/ReportInoutDetail_4.xls',     label:'ERP (4)' },
-  { path:'data/ReportInoutDetail_5.xls',     label:'ERP (5)' },
-  { path:'data/ReportInoutDetail_2.xlsx',    label:'ERP actualizado (xlsx)' }
+  { path:'data/ReportInoutDetail.xlsx',      label:'ERP (xlsx)' }
 ];
+/* Archivos semanales: ReportInoutDetail_2 ... _30, en .xls o .xlsx. Los que no existan se ignoran;
+   uno con número mayor reemplaza las fechas que repita. */
+for (let n = 2; n <= 30; n++){
+  ['xls','xlsx'].forEach(ext => DATA_FILES.push({ path:`data/ReportInoutDetail_${n}.${ext}`, label:`ERP (${n})` }));
+}
 
 function hideNotice(){
   const n = document.getElementById('dataNotice');
