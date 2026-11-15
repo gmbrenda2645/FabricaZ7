@@ -691,7 +691,7 @@ function parseErpRows(rows){
   const headers = rows[hIdx].map(normKey);
   const ix = n => headers.indexOf(n);
   const c = { fecha:ix('fecha'), tipo:ix('tipo de albaran'), tercero:ix('tercero'),
-              codigo:ix('codigo'), producto:ix('producto'), etapa:ix('etapa de producto'), cant:ix('cantidad') };
+              codigo:ix('codigo'), producto:ix('producto'), etapa:ix('etapa de producto'), cant:ix('cantidad'), razon:ix('razon') };
   const out = [];
   const notes = [];
   let sinFecha = 0;
@@ -709,6 +709,12 @@ function parseErpRows(rows){
     const isDev = tipo.includes('devolucion');
     if (!isMp && !isDev){ tiposRaros.add(String(r[c.tipo]).trim()); continue; }
     const qty = parseQty(r[c.cant]);
+    // Razón de la mala producción (columna "Razón" del reporte, si viene): se limpia espacios y se unifica la mayúscula inicial
+    let razonMp = '';
+    if (isMp && c.razon >= 0 && r[c.razon] != null){
+      razonMp = String(r[c.razon]).replace(/\u00a0/g,' ').trim().replace(/\s+/g,' ');
+      if (razonMp) razonMp = razonMp.charAt(0).toUpperCase() + razonMp.slice(1).toLowerCase();
+    }
     out.push({
       fecha,
       tienda: normalizeStore(r[c.tercero]),
@@ -717,7 +723,7 @@ function parseErpRows(rows){
       devolucion: isMp ? 0 : qty,
       malaProduccion: isMp ? qty : 0,
       total: qty,
-      razon: isMp ? '' : 'Devolución'
+      razon: isMp ? razonMp : 'Devolución'
     });
   }
   if (sinFecha) notes.push(`${sinFecha} filas del ERP sin fecha válida fueron omitidas.`);
@@ -1240,13 +1246,16 @@ function renderDataNotice(meta){
     const gaps = detectGaps(state.raw, 3);
     gaps.forEach(g=>{
       lines.push(`<div><span class="n-warn">⚠ Sin datos del ${fmtDate(g.from)} al ${fmtDate(g.to)} (${g.days} días).</span> `+
-                 `Exporta ese periodo del ERP y súbelo como <b>ReportInoutDetail_2.xls</b> para completarlo.</div>`);
+                 `Exporta ese periodo del ERP y súbelo a la carpeta <code>data/</code> como el siguiente <b>ReportInoutDetail_N.xlsx</b> para completarlo.</div>`);
     });
     const { merged, parts } = meta;
     if (merged && merged.erpRange){
       let t = `ℹ Datos del ERP: ${fmtDate(merged.erpRange.min)} al ${fmtDate(merged.erpRange.max)}.`;
       if (merged.replaced > 0) t += ` Reemplazan ${merged.replaced.toLocaleString('es-GT')} filas del histórico en esas fechas.`;
-      t += ` El ERP no registra la razón de la mala producción: en esos días aparece como “(sin razón)”.`;
+      const t0 = +merged.erpRange.min, t1 = +merged.erpRange.max;
+      let mpTot = 0, mpSin = 0;
+      state.raw.forEach(r=>{ if (r.malaProduccion > 0 && +r.fecha >= t0 && +r.fecha <= t1){ mpTot++; if (!(r.razon && String(r.razon).trim())) mpSin++; } });
+      if (mpSin > 0) t += ` ${mpSin.toLocaleString('es-GT')} de ${mpTot.toLocaleString('es-GT')} registros de mala producción no traen razón y aparecen como “(sin razón)”.`;
       lines.push(`<div>${t}</div>`);
     }
     (parts||[]).forEach(p=> (p.notes||[]).forEach(n=> lines.push(`<div>ℹ ${esc(p.name)}: ${esc(n)}</div>`)));
